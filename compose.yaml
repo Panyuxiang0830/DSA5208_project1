@@ -1,0 +1,108 @@
+name: dsa5208-mongodb
+
+x-mongo-common: &mongo-common
+  image: ${MONGO_IMAGE:-mongo:8.0.29}
+  restart: unless-stopped
+  command:
+    - mongod
+    - --replSet
+    - rs0
+    - --bind_ip_all
+    - --port
+    - "27017"
+    - --oplogSize
+    - "256"
+    - --wiredTigerCacheSizeGB
+    - ${MONGO_CACHE_GB:-0.5}
+  mem_limit: ${MONGO_CONTAINER_MEMORY:-1536m}
+  stop_grace_period: 30s
+  healthcheck:
+    test:
+      - CMD-SHELL
+      - 'mongosh --host 127.0.0.1:27017 --quiet --eval "quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)"'
+    interval: 5s
+    timeout: 4s
+    retries: 30
+    start_period: 10s
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+  networks:
+    - mongo-net
+
+services:
+  mongo1:
+    <<: *mongo-common
+    hostname: mongo1
+    ports:
+      - "127.0.0.1:${MONGO1_PORT:-27017}:27017"
+    volumes:
+      - mongo1-data:/data/db
+
+  mongo2:
+    <<: *mongo-common
+    hostname: mongo2
+    ports:
+      - "127.0.0.1:${MONGO2_PORT:-27018}:27017"
+    volumes:
+      - mongo2-data:/data/db
+
+  mongo3:
+    <<: *mongo-common
+    hostname: mongo3
+    ports:
+      - "127.0.0.1:${MONGO3_PORT:-27019}:27017"
+    volumes:
+      - mongo3-data:/data/db
+
+  mongo-init:
+    image: ${MONGO_IMAGE:-mongo:8.0.29}
+    profiles:
+      - tools
+    restart: "no"
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
+    entrypoint:
+      - mongosh
+      - --host
+      - mongo1:27017
+      - --quiet
+      - /workspace/scripts/init-replica-set.js
+    volumes:
+      - ./scripts:/workspace/scripts:ro
+    networks:
+      - mongo-net
+
+  runner:
+    build:
+      context: .
+      dockerfile: docker/runner/Dockerfile
+    profiles:
+      - tools
+    working_dir: /workspace
+    environment:
+      MONGODB_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+    volumes:
+      - ./:/workspace
+    networks:
+      - mongo-net
+
+networks:
+  mongo-net:
+    name: dsa5208-mongo-net
+    driver: bridge
+
+volumes:
+  mongo1-data:
+    name: dsa5208-mongo1-data
+  mongo2-data:
+    name: dsa5208-mongo2-data
+  mongo3-data:
+    name: dsa5208-mongo3-data
