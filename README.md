@@ -6,6 +6,8 @@ network partitions.
 
 The project plan is in [PROJECT_PLAN.md](PROJECT_PLAN.md).
 The current cloud environment is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
+The first normal-operation results are in
+[results/summary/BASELINE_S0_RESULTS.md](results/summary/BASELINE_S0_RESULTS.md).
 
 ## Architecture
 
@@ -83,6 +85,34 @@ docker compose run --rm --no-deps runner
 
 The command returns JSON containing `"ok": true`, the elected Primary, and all
 three replica-set hosts.
+
+## Run the normal-operation consistency baseline
+
+Run a 20-sequence pilot for all four configurations and all four client-centric
+consistency models:
+
+```bash
+docker compose run --rm --no-deps runner \
+  python -m experiments.run_baseline \
+  --iterations 20 \
+  --seeds 20260830 \
+  --label pilot
+```
+
+Run the planned 500-sequence baseline with three deterministic seeds:
+
+```bash
+docker compose run --rm --no-deps runner \
+  python -m experiments.run_baseline \
+  --iterations 500 \
+  --seeds 20260830,20260831,20260832 \
+  --label formal
+```
+
+Raw JSONL logs are written to `results/raw/` and are ignored by Git by default.
+Machine-readable summaries are written to `results/summary/`. Each operation
+records the effective configuration, logical version, latency, outcome,
+consistency check, and the MongoDB member that served the command when known.
 
 ## Stop and restart
 
