@@ -5,6 +5,7 @@ study client-centric consistency under normal operation, node failure, and
 network partitions.
 
 The project plan is in [PROJECT_PLAN.md](PROJECT_PLAN.md).
+The current cloud environment is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Architecture
 
