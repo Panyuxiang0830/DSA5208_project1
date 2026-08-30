@@ -49,6 +49,15 @@ Requirements:
 - Docker Engine
 - Docker Compose v2 (`docker compose`)
 
+On a fresh Ubuntu 24.04 VM, install the requirements with:
+
+```bash
+./scripts/bootstrap-ubuntu.sh
+```
+
+Reconnect once after the script finishes so the Docker group membership takes
+effect.
+
 Run:
 
 ```bash
@@ -109,4 +118,3 @@ docker compose down --volumes
 
 After the first deployment, record `docker version`, `docker compose version`,
 the MongoDB image digest, the Ubuntu version, and the Google Cloud VM type.
-
