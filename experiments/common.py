@@ -137,15 +137,19 @@ def new_operation_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}"
 
 
-def make_client(listener: OperationServerListener, uri: str = MONGODB_URI) -> MongoClient:
+def make_client(
+    listener: OperationServerListener,
+    uri: str = MONGODB_URI,
+    timeout_ms: int = 5000,
+) -> MongoClient:
     return MongoClient(
         uri,
         appname="dsa5208-client-consistency",
         event_listeners=[listener],
         retryReads=False,
         retryWrites=False,
-        serverSelectionTimeoutMS=5000,
-        connectTimeoutMS=5000,
+        serverSelectionTimeoutMS=timeout_ms,
+        connectTimeoutMS=timeout_ms,
         localThresholdMS=1000,
     )
 
@@ -182,12 +186,24 @@ def direct_secondary_collections(
 ) -> tuple[list[MongoClient], list[Any]]:
     hello = client.admin.command("hello")
     primary = hello.get("primary")
-    secondaries = sorted(host for host in hello.get("hosts", []) if host != primary)
+    candidate_hosts = sorted(host for host in hello.get("hosts", []) if host != primary)
     direct_clients: list[MongoClient] = []
     collections: list[Any] = []
 
-    for host in secondaries:
-        direct = make_client(listener, f"mongodb://{host}/?directConnection=true")
+    for host in candidate_hosts:
+        direct = make_client(
+            listener,
+            f"mongodb://{host}/?directConnection=true",
+            timeout_ms=1500,
+        )
+        try:
+            direct_hello = direct.admin.command("hello")
+        except Exception:
+            direct.close()
+            continue
+        if not direct_hello.get("secondary"):
+            direct.close()
+            continue
         direct_clients.append(direct)
         database = direct.get_database(
             DATABASE_NAME,
@@ -197,10 +213,12 @@ def direct_secondary_collections(
         )
         collections.append(database.get_collection(collection_name))
 
-    if len(collections) < 2:
+    if not collections:
         for direct in direct_clients:
             direct.close()
-        raise RuntimeError(f"Expected two secondaries, discovered {secondaries}")
+        raise RuntimeError(
+            f"Expected at least one reachable Secondary; candidates={candidate_hosts}"
+        )
 
     return direct_clients, collections
 
@@ -238,7 +256,7 @@ def operation_event(
     return {
         "event_kind": "operation",
         "run_id": run_id,
-        "scenario": "S0-normal",
+        "scenario": os.environ.get("EXPERIMENT_SCENARIO", "S0-normal"),
         "config_id": config.config_id,
         "config": config.as_dict(),
         "model": model,

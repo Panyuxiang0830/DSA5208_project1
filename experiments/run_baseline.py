@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import sys
 import time
@@ -41,6 +42,7 @@ def main() -> int:
     parser.add_argument("--configs", default=",".join(CONFIGS))
     parser.add_argument("--models", default=",".join(MODELS))
     parser.add_argument("--label", default="pilot")
+    parser.add_argument("--scenario", default="S0-normal")
     parser.add_argument("--raw-dir", type=Path, default=Path("results/raw"))
     parser.add_argument("--summary-dir", type=Path, default=Path("results/summary"))
     args = parser.parse_args()
@@ -57,7 +59,11 @@ def main() -> int:
         parser.error(f"unknown configs={unknown_configs}, models={unknown_models}")
 
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    run_id = f"baseline-s0-{args.label}-{timestamp}-{uuid.uuid4().hex[:8]}"
+    scenario_slug = "".join(
+        character.lower() if character.isalnum() else "-"
+        for character in args.scenario
+    ).strip("-")
+    run_id = f"{scenario_slug}-{args.label}-{timestamp}-{uuid.uuid4().hex[:8]}"
     raw_path = args.raw_dir / f"{run_id}.jsonl"
     summary_path = args.summary_dir / f"{run_id}.summary.json"
 
@@ -72,11 +78,14 @@ def main() -> int:
     suite_failed = False
 
     with JsonlRecorder(raw_path) as recorder:
+        # Model modules use this environment value when constructing events.
+        # Setting it here also makes direct CLI execution consistent.
+        os.environ["EXPERIMENT_SCENARIO"] = args.scenario
         recorder.write(
             {
                 "event_kind": "suite_metadata",
                 "run_id": run_id,
-                "scenario": "S0-normal",
+                "scenario": args.scenario,
                 "label": args.label,
                 "started_at": started_wall.isoformat(),
                 "iterations": args.iterations,
@@ -131,7 +140,7 @@ def main() -> int:
                     combination = {
                         "event_kind": "combination_summary",
                         "run_id": run_id,
-                        "scenario": "S0-normal",
+                        "scenario": args.scenario,
                         "config_id": config_id,
                         "model": model_id,
                         "seed": seed,
@@ -150,7 +159,7 @@ def main() -> int:
 
     summary = summarize(load_events([raw_path]))
     summary["run_id"] = run_id
-    summary["scenario"] = "S0-normal"
+    summary["scenario"] = args.scenario
     summary["label"] = args.label
     summary["started_at"] = started_wall.isoformat()
     summary["finished_at"] = datetime.now(UTC).isoformat()

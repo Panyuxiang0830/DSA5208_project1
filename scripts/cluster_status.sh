@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/cluster_control.sh"
 
-repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_dir"
-
-docker compose exec -T mongo1 mongosh --quiet --eval '
+target="$(discover_primary || choose_secondary)"
+docker compose exec -T "${target}" mongosh --quiet --eval '
 const status = rs.status();
 printjson(status.members.map((member) => ({
   name: member.name,
@@ -13,4 +12,3 @@ printjson(status.members.map((member) => ({
   optimeDate: member.optimeDate
 })));
 '
-

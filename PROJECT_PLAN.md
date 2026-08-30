@@ -8,7 +8,7 @@
 - 计划数据库：MongoDB Community（最终固定到明确的 `8.0.x` 镜像版本与镜像摘要）
 - 计划部署：一台 Google Cloud Ubuntu VM 上的 3 个 Docker 容器
 - 客户端与实验工具：Python、PyMongo、Docker Compose
-- 当前状态：计划阶段
+- 当前状态：已完成部署、S0 正常基线以及 S1-S3 节点故障/网络分区正式实验；下一阶段为选举窗口与恢复后扩展实验、图表和 PDF 报告
 
 > 本计划是执行基线。数据库、驱动、操作系统和 Docker 的精确版本将在首次成功部署后记录并锁定。
 

@@ -8,6 +8,8 @@ The project plan is in [PROJECT_PLAN.md](PROJECT_PLAN.md).
 The current cloud environment is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
 The first normal-operation results are in
 [results/summary/BASELINE_S0_RESULTS.md](results/summary/BASELINE_S0_RESULTS.md).
+The formal node-failure and network-partition results are in
+[results/summary/FAULT_SCENARIO_RESULTS.md](results/summary/FAULT_SCENARIO_RESULTS.md).
 
 ## Architecture
 
@@ -113,6 +115,41 @@ Raw JSONL logs are written to `results/raw/` and are ignored by Git by default.
 Machine-readable summaries are written to `results/summary/`. Each operation
 records the effective configuration, logical version, latency, outcome,
 consistency check, and the MongoDB member that served the command when known.
+
+## Run the fault scenarios
+
+The fault wrapper first restores a healthy Replica Set, injects one fault,
+runs the same configuration/model matrix, and restores all three members before
+exiting. Its exit trap also attempts recovery if the experiment is interrupted.
+
+Run short pilots:
+
+```bash
+./scripts/run_fault_scenario.sh S1-secondary-failure 20 20260830 pilot
+./scripts/run_fault_scenario.sh S2-primary-failure 20 20260830 pilot
+./scripts/run_fault_scenario.sh S3-primary-partition 20 20260830 pilot
+```
+
+Run a formal scenario with 500 sequences and three deterministic seeds:
+
+```bash
+./scripts/run_fault_scenario.sh S1-secondary-failure \
+  500 20260830,20260831,20260832 formal
+```
+
+Replace the scenario name with `S2-primary-failure` or
+`S3-primary-partition` for the other formal runs. S1 stops one Secondary. S2
+stops the current Primary and waits for a new election. S3 disconnects the
+current Primary from the Docker network and waits for the majority partition to
+elect a new Primary. Fault and recovery events are saved alongside the raw
+JSONL results in `results/raw/`.
+
+To recover the cluster manually after an interrupted run:
+
+```bash
+./scripts/restore_cluster.sh
+./scripts/cluster_status.sh
+```
 
 ## Stop and restart
 

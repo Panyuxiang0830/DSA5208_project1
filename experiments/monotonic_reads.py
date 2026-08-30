@@ -47,9 +47,12 @@ def run(
 
     writer_errors: list[Exception] = []
     writer_random = random.Random(seed ^ 0x5A5A)
+    stop_writer = threading.Event()
 
     def background_writer() -> None:
         for version in range(1, iterations * 2 + 1):
+            if stop_writer.is_set():
+                return
             operation_id = new_operation_id("mr-background-write")
             started = time.monotonic_ns()
             try:
@@ -163,7 +166,11 @@ def run(
                     )
                 time.sleep(read_random.uniform(0.0002, 0.0020))
     finally:
-        writer.join(timeout=15)
+        # End the concurrent workload before the caller closes the shared
+        # MongoClient. A timed join can leave the daemon thread using a client
+        # that run_baseline closes immediately after this function returns.
+        stop_writer.set()
+        writer.join()
         for direct in direct_clients:
             direct.close()
 

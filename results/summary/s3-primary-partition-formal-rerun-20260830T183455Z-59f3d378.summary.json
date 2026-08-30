@@ -1,0 +1,1921 @@
+{
+  "aggregates": [
+    {
+      "check_count": 1500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.499445,
+        "p95": 6.85788,
+        "p99": 11.756354
+      },
+      "model": "monotonic-reads",
+      "operation_count": 2234,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 2234
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 3,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.67742,
+        "p95": 9.017438,
+        "p99": 17.399611
+      },
+      "model": "monotonic-writes",
+      "operation_count": 1503,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.049809,
+        "p95": 6.068864,
+        "p99": 11.698415
+      },
+      "model": "read-your-writes",
+      "operation_count": 3000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 3000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.366314,
+        "p95": 11.600017,
+        "p99": 26.741392
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 6000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 6000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.53678,
+        "p95": 7.898802,
+        "p99": 14.535677
+      },
+      "model": "monotonic-reads",
+      "operation_count": 2170,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 670,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 3,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.62371,
+        "p95": 7.77172,
+        "p99": 11.825542
+      },
+      "model": "monotonic-writes",
+      "operation_count": 1503,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.154784,
+        "p95": 7.04231,
+        "p99": 14.254621
+      },
+      "model": "read-your-writes",
+      "operation_count": 3000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.90425,
+        "p95": 18.891722,
+        "p99": 43.946913
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 6000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 4500,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.171315,
+        "p95": 3.216902,
+        "p99": 5.99209
+      },
+      "model": "monotonic-reads",
+      "operation_count": 2984,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1484,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 3,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.163,
+        "p95": 3.591458,
+        "p99": 6.941281
+      },
+      "model": "monotonic-writes",
+      "operation_count": 1503,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 0.884309,
+        "p95": 2.854762,
+        "p99": 7.320573
+      },
+      "model": "read-your-writes",
+      "operation_count": 3000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 1049,
+      "violation_rate": 0.69933333
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.08761,
+        "p95": 8.063166,
+        "p99": 17.304992
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 6000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 4500,
+        "mongo3:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.807355,
+        "p95": 8.419177,
+        "p99": 16.094131
+      },
+      "model": "monotonic-reads",
+      "operation_count": 2208,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 2208
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 3,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.30095,
+        "p95": 6.722732,
+        "p99": 9.894494
+      },
+      "model": "monotonic-writes",
+      "operation_count": 1503,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.165114,
+        "p95": 6.453638,
+        "p99": 11.713703
+      },
+      "model": "read-your-writes",
+      "operation_count": 3000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 3000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.528264,
+        "p95": 12.960106,
+        "p99": 27.345161
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 6000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo2:27017": 6000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    }
+  ],
+  "combination_results": [
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 3.045222,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 1.35901,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C1",
+      "duration_seconds": 2.202869,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 7.485437,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 2.718113,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 1.6509,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C2",
+      "duration_seconds": 2.737172,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 8.622452,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.38456,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 416
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.187905,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 1.312275,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 5.49315,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 3.53817,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 1.385395,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C4",
+      "duration_seconds": 2.117276,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 8.451265,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 2.65236,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 1.599799,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C1",
+      "duration_seconds": 2.888943,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 7.340781,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 3.234341,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 1.455664,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C2",
+      "duration_seconds": 1.765082,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 7.087767,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.016388,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 277
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.054047,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 0.765687,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 6.183673,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 2.492965,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 1.790141,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C4",
+      "duration_seconds": 1.870686,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 7.473175,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 2.332153,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 1.721071,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C1",
+      "duration_seconds": 2.013697,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C1",
+      "duration_seconds": 7.967114,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 3.208765,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 1.729177,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C2",
+      "duration_seconds": 2.088932,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C2",
+      "duration_seconds": 12.518605,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 2.688628,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 356
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.09064,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 0.855684,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 6.824591,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 2.464845,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 2.102217,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 1,
+      "config_id": "C4",
+      "duration_seconds": 2.081232,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C4",
+      "duration_seconds": 8.123533,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    }
+  ],
+  "finished_at": "2026-08-30T18:37:53.078777+00:00",
+  "groups": [
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.2475,
+        "p95": 5.354619,
+        "p99": 8.273331
+      },
+      "model": "monotonic-reads",
+      "operation_count": 759,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 759
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.61494,
+        "p95": 7.168261,
+        "p99": 10.776592
+      },
+      "model": "monotonic-reads",
+      "operation_count": 737,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 737
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.710295,
+        "p95": 7.754249,
+        "p99": 14.003131
+      },
+      "model": "monotonic-reads",
+      "operation_count": 738,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 738
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.63568,
+        "p95": 7.733,
+        "p99": 13.62198
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.216409,
+        "p95": 12.707309,
+        "p99": 23.763518
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.24168,
+        "p95": 6.95714,
+        "p99": 11.757779
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.156695,
+        "p95": 6.863552,
+        "p99": 14.707605
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.00437,
+        "p95": 6.390208,
+        "p99": 9.425693
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.957305,
+        "p95": 5.317673,
+        "p99": 8.158481
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.512495,
+        "p95": 11.275875,
+        "p99": 21.501503
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.93802,
+        "p95": 10.267309,
+        "p99": 32.446825
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C1",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.71776,
+        "p95": 12.95129,
+        "p99": 24.58153
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.56443,
+        "p95": 6.921815,
+        "p99": 15.984176
+      },
+      "model": "monotonic-reads",
+      "operation_count": 745,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 245,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.22782,
+        "p95": 8.675614,
+        "p99": 14.46132
+      },
+      "model": "monotonic-reads",
+      "operation_count": 686,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 186,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.01753,
+        "p95": 7.904823,
+        "p99": 13.371141
+      },
+      "model": "monotonic-reads",
+      "operation_count": 739,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 239,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.24224,
+        "p95": 10.330351,
+        "p99": 19.65673
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.953849,
+        "p95": 5.836669,
+        "p99": 7.884789
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.64529,
+        "p95": 7.215829,
+        "p99": 9.221979
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.072191,
+        "p95": 6.187885,
+        "p99": 9.099972
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.10175,
+        "p95": 6.462989,
+        "p99": 23.160851
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.283705,
+        "p95": 8.036193,
+        "p99": 13.931543
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 5.027184,
+        "p95": 13.601704,
+        "p99": 30.258062
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.07099,
+        "p95": 11.360053,
+        "p99": 25.866312
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C2",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 5.773009,
+        "p95": 30.230958,
+        "p99": 65.505104
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.205855,
+        "p95": 3.405196,
+        "p99": 5.822305
+      },
+      "model": "monotonic-reads",
+      "operation_count": 1024,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 524,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.11825,
+        "p95": 2.831079,
+        "p99": 4.370324
+      },
+      "model": "monotonic-reads",
+      "operation_count": 1018,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 518,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.213275,
+        "p95": 3.48743,
+        "p99": 7.805068
+      },
+      "model": "monotonic-reads",
+      "operation_count": 942,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 442,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.63751,
+        "p95": 5.282779,
+        "p99": 11.521469
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.01244,
+        "p95": 2.426799,
+        "p99": 4.295229
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.113669,
+        "p95": 2.344659,
+        "p99": 3.574669
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 0.94194,
+        "p95": 4.056109,
+        "p99": 13.555283
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 416,
+      "violation_rate": 0.832
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 0.92929,
+        "p95": 2.876636,
+        "p99": 6.440896
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 277,
+      "violation_rate": 0.554
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 0.818545,
+        "p95": 1.858048,
+        "p99": 2.994047
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 356,
+      "violation_rate": 0.712
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.860089,
+        "p95": 5.01962,
+        "p99": 9.853068
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.17249,
+        "p95": 8.766289,
+        "p99": 15.952375
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.283269,
+        "p95": 9.529217,
+        "p99": 23.727184
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 1500,
+        "mongo3:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.371435,
+        "p95": 5.527708,
+        "p99": 7.628424
+      },
+      "model": "monotonic-reads",
+      "operation_count": 750,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 750
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.12111,
+        "p95": 8.292877,
+        "p99": 12.71036
+      },
+      "model": "monotonic-reads",
+      "operation_count": 750,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 750
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.016555,
+        "p95": 10.657768,
+        "p99": 28.125841
+      },
+      "model": "monotonic-reads",
+      "operation_count": 708,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 708
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.356999,
+        "p95": 6.88008,
+        "p99": 12.128629
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.18494,
+        "p95": 5.973139,
+        "p99": 7.999409
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.34352,
+        "p95": 7.132099,
+        "p99": 10.087099
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.622075,
+        "p95": 8.290708,
+        "p99": 18.837398
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.05035,
+        "p95": 5.334187,
+        "p99": 7.492341
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.963264,
+        "p95": 5.504326,
+        "p99": 9.312625
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 1000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.679719,
+        "p95": 13.588553,
+        "p99": 29.827618
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.38323,
+        "p95": 13.026364,
+        "p99": 23.073685
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C4",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 4.553674,
+        "p95": 12.46746,
+        "p99": 28.795048
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 2000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo2:27017": 2000
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    }
+  ],
+  "label": "formal-rerun",
+  "metadata": [
+    {
+      "configs": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "event_kind": "suite_metadata",
+      "hosts": [
+        "mongo1:27017",
+        "mongo2:27017",
+        "mongo3:27017"
+      ],
+      "iterations": 500,
+      "label": "formal-rerun",
+      "models": [
+        "read-your-writes",
+        "monotonic-reads",
+        "monotonic-writes",
+        "writes-follow-reads"
+      ],
+      "mongodb_version": "8.0.29",
+      "primary": "mongo2:27017",
+      "pymongo_version": "4.17.0",
+      "python_version": "3.12.14",
+      "replica_set": "rs0",
+      "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+      "scenario": "S3-primary-partition",
+      "seeds": [
+        20260830,
+        20260831,
+        20260832
+      ],
+      "started_at": "2026-08-30T18:34:55.807879+00:00"
+    }
+  ],
+  "run_id": "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378",
+  "scenario": "S3-primary-partition",
+  "started_at": "2026-08-30T18:34:55.807879+00:00",
+  "totals": {
+    "check_count": 18012,
+    "error_count": 0,
+    "group_count": 48,
+    "operation_count": 51608,
+    "violation_count": 1049
+  }
+}
