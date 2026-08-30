@@ -320,3 +320,95 @@ DSA5208_project1/
 ## 19. AI 使用说明草案
 
 本项目将披露生成式 AI 的辅助范围，例如：概念解释、计划整理、脚本初稿、代码审查和文字润色。小组成员负责验证所有命令、代码、实验设计、结果与引用；实验数据和结论不得由 AI 虚构。最终报告将按课程要求描述所使用的 AI 工具、用途和人工复核方式。
+
+## 20. 后续实验扩展计划（暂不改变当前基线）
+
+本节记录完成基础部署与现有 C1-C4 实验后可考虑的扩展。当前阶段不据此修改核心实验设计，以避免在部署完成前扩大实验矩阵。
+
+### 20.1 配置参数归类
+
+后续分析中需要保持以下概念边界：
+
+- `causalConsistency=true/false` 属于客户端 Session 配置；
+- `{w: 1}` 与 `{w: "majority"}` 属于 Write concern；
+- `"local"`、`"majority"` 与 `"linearizable"` 属于 Read concern；
+- `primary`、`secondary` 与 `secondaryPreferred` 属于 Read preference。
+
+因此，`local` 和 `linearizable` 不应作为新的独立配置列，而应作为 Read concern 的不同取值。
+
+### 20.2 四种客户端一致性的关系
+
+四种客户端一致性是并列且相对独立的会话保证，分别覆盖同一逻辑客户端相邻操作的四种类型：
+
+| 前序操作 | 后续操作 | 对应的客户端一致性 |
+|---|---|---|
+| Write | Read | Read-your-writes |
+| Read | Read | Monotonic reads |
+| Write | Write | Monotonic writes |
+| Read | Write | Writes-follow-reads |
+
+单独满足其中一种不会自动推出其余三种。因果一致会话在满足相应读写条件时可以同时提供四种保证；线性一致性属于更强的、要求真实时间顺序的数据中心一致性模型，不能与任意一个单独的客户端保证简单等同。
+
+### 20.3 MongoDB 官方 2x2 Concern 矩阵
+
+在因果一致会话中，MongoDB 官方文档给出的可持久因果保证如下：
+
+| Read concern | Write concern | RYW | MR | MW | WFR |
+|---|---|---|---|---|---|
+| `majority` | `majority` | 保证 | 保证 | 保证 | 保证 |
+| `majority` | `w: 1` | 不保证 | 保证 | 不保证 | 保证 |
+| `local` | `majority` | 不保证 | 不保证 | 保证 | 不保证 |
+| `local` | `w: 1` | 不保证 | 不保证 | 不保证 | 不保证 |
+
+表中的“不保证”表示系统允许出现违反，而不是每次运行都必然违反。网络分区、Primary 切换、Secondary 复制滞后和大量重复操作可用于提高观察到违反的概率。
+
+完成 C1-C4 后，可以考虑把该 2x2 矩阵作为第二阶段的受控实验：保持因果 Session 与 Read preference 不变，只改变 Read concern 和 Write concern，从而减少混杂变量。
+
+### 20.4 可选的 Session 对照
+
+后续可增加一组与因果会话配置仅相差 Session 开关的对照：
+
+| Session | Write concern | Read concern | Read preference | 目的 |
+|---|---|---|---|---|
+| 因果会话 | `majority` | `majority` | `secondary` | 跨副本因果读取 |
+| 无因果会话 | `majority` | `majority` | `secondary` | 分离因果 Session 本身的影响 |
+
+两组配置应保持其他参数、工作负载、随机种子与故障时间线一致。
+
+### 20.5 可选的 Linearizable 强对照
+
+`readConcern: "linearizable"` 与 `writeConcern: "majority"` 可作为额外的强一致性对照，但不纳入当前核心矩阵。候选配置为：
+
+```text
+causalConsistency: false
+writeConcern: majority
+readConcern: linearizable
+readPreference: primary
+maxTimeMS: 5000
+```
+
+该配置需遵守以下限制：
+
+- Linearizable read concern 只能读取 Primary；
+- 不能用于 causally consistent session；
+- 实验应按唯一键（例如 `_id`）读取单个文档；
+- 应设置 `maxTimeMS`，避免多数数据节点不可用时无限等待；
+- 它可能显著慢于 `local` 或 `majority`，因此应同时比较延迟和错误率。
+
+Linearizable 对照的目的不是替换四种客户端一致性实验，而是展示更强的数据中心一致性在延迟和故障可用性上的代价。
+
+### 20.6 扩展启用条件
+
+仅在以下条件满足后启用上述扩展：
+
+1. 三节点 Replica Set 部署和恢复流程稳定；
+2. C1-C4 在正常、节点故障和网络分区下均可重复运行；
+3. 原始日志足以区分一致性违反、超时、回滚和普通请求失败；
+4. 核心实验与报告进度不受影响；
+5. 小组确认增加的实验量能够在截止日期前完成。
+
+扩展参考资料：
+
+- [MongoDB: Causal Consistency and Read and Write Concerns](https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/)
+- [MongoDB: Read Concern `linearizable`](https://www.mongodb.com/docs/manual/reference/read-concern-linearizable/)
+- [MongoDB: Read Concern](https://www.mongodb.com/docs/manual/reference/read-concern/)
