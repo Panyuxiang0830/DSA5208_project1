@@ -50,9 +50,12 @@ def run(
 
     writer_errors: list[Exception] = []
     writer_random = random.Random(seed ^ 0xA5A5)
+    stop_writer = threading.Event()
 
     def background_writer() -> None:
         for version in range(1, iterations * 2 + 1):
+            if stop_writer.is_set():
+                return
             operation_id = new_operation_id("wfr-background-write")
             started = time.monotonic_ns()
             try:
@@ -222,7 +225,8 @@ def run(
                         )
                     )
     finally:
-        writer.join(timeout=15)
+        stop_writer.set()
+        writer.join()
         for direct in direct_clients:
             direct.close()
 

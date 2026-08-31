@@ -1,0 +1,415 @@
+{
+  "aggregates": [
+    {
+      "check_count": 785,
+      "config_id": "C1",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.508375,
+        "p95": 27.689285,
+        "p99": 57.705476
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1574,
+      "seed_count": 1,
+      "served_by": {
+        "mongo1:27017": 445,
+        "mongo2:27017": 1126
+      },
+      "success_rate": 0.9974587,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 801,
+      "config_id": "C2",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.113485,
+        "p95": 26.527912,
+        "p99": 57.533224
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1606,
+      "seed_count": 1,
+      "served_by": {
+        "mongo1:27017": 221,
+        "mongo2:27017": 684,
+        "mongo3:27017": 698
+      },
+      "success_rate": 0.99750934,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1186,
+      "config_id": "C3",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 2.431065,
+        "p95": 11.193751,
+        "p99": 26.999165
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 2376,
+      "seed_count": 1,
+      "served_by": {
+        "mongo1:27017": 354,
+        "mongo2:27017": 1007,
+        "mongo3:27017": 1012
+      },
+      "success_rate": 0.9983165,
+      "violation_count": 808,
+      "violation_rate": 0.68128162
+    },
+    {
+      "check_count": 783,
+      "config_id": "C4",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.72216,
+        "p95": 25.482437,
+        "p99": 57.42342
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1569,
+      "seed_count": 1,
+      "served_by": {
+        "mongo1:27017": 440,
+        "mongo2:27017": 1126
+      },
+      "success_rate": 0.99745061,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    }
+  ],
+  "combination_results": [],
+  "duration_seconds": 35.0,
+  "groups": [
+    {
+      "check_count": 785,
+      "config_id": "C1",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.508375,
+        "p95": 27.689285,
+        "p99": 57.705476
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1574,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 445,
+        "mongo2:27017": 1126
+      },
+      "success_rate": 0.9974587,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 801,
+      "config_id": "C2",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.113485,
+        "p95": 26.527912,
+        "p99": 57.533224
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1606,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 221,
+        "mongo2:27017": 684,
+        "mongo3:27017": 698
+      },
+      "success_rate": 0.99750934,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1186,
+      "config_id": "C3",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 2.431065,
+        "p95": 11.193751,
+        "p99": 26.999165
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 2376,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 354,
+        "mongo2:27017": 1007,
+        "mongo3:27017": 1012
+      },
+      "success_rate": 0.9983165,
+      "violation_count": 808,
+      "violation_rate": 0.68128162
+    },
+    {
+      "check_count": 783,
+      "config_id": "C4",
+      "error_count": 4,
+      "latency_ms": {
+        "p50": 6.72216,
+        "p95": 25.482437,
+        "p99": 57.42342
+      },
+      "model": "read-your-writes-transition",
+      "operation_count": 1569,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 440,
+        "mongo2:27017": 1126
+      },
+      "success_rate": 0.99745061,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    }
+  ],
+  "label": "formal-rerun",
+  "metadata": [
+    {
+      "configs": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "duration_seconds": 35.0,
+      "event_kind": "suite_metadata",
+      "label": "formal-rerun",
+      "run_id": "t2-primary-partition-transition-formal-rerun-20260831T082655Z-b9f2cd1b",
+      "scenario": "T2-primary-partition-transition",
+      "seed": 20260831,
+      "started_at": "2026-08-31T08:26:55.719857+00:00"
+    }
+  ],
+  "phase_rows": [
+    {
+      "check_count": 157,
+      "config_id": "C1",
+      "error_count": 4,
+      "error_rate": 0.01257862,
+      "latency_ms": {
+        "p50": 9.185159,
+        "p95": 43.299151,
+        "p99": 91.146188
+      },
+      "operation_count": 318,
+      "phase": "election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 411,
+      "config_id": "C1",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 5.57605,
+        "p95": 21.413532,
+        "p99": 43.243246
+      },
+      "operation_count": 822,
+      "phase": "post-election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 217,
+      "config_id": "C1",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 7.518035,
+        "p95": 25.979026,
+        "p99": 47.831882
+      },
+      "operation_count": 434,
+      "phase": "pre-fault",
+      "violation_count": 0
+    },
+    {
+      "check_count": 168,
+      "config_id": "C2",
+      "error_count": 4,
+      "error_rate": 0.01173021,
+      "latency_ms": {
+        "p50": 7.88174,
+        "p95": 38.981685,
+        "p99": 89.058221
+      },
+      "operation_count": 341,
+      "phase": "election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 417,
+      "config_id": "C2",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 5.15194,
+        "p95": 20.995761,
+        "p99": 45.428171
+      },
+      "operation_count": 833,
+      "phase": "post-election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 216,
+      "config_id": "C2",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 7.12312,
+        "p95": 27.896197,
+        "p99": 55.057701
+      },
+      "operation_count": 432,
+      "phase": "pre-fault",
+      "violation_count": 0
+    },
+    {
+      "check_count": 276,
+      "config_id": "C3",
+      "error_count": 4,
+      "error_rate": 0.00719424,
+      "latency_ms": {
+        "p50": 2.839399,
+        "p95": 12.613025,
+        "p99": 46.857905
+      },
+      "operation_count": 556,
+      "phase": "election",
+      "violation_count": 202
+    },
+    {
+      "check_count": 564,
+      "config_id": "C3",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 2.37064,
+        "p95": 8.745794,
+        "p99": 19.064215
+      },
+      "operation_count": 1127,
+      "phase": "post-election",
+      "violation_count": 343
+    },
+    {
+      "check_count": 346,
+      "config_id": "C3",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 2.25544,
+        "p95": 11.889947,
+        "p99": 25.259885
+      },
+      "operation_count": 693,
+      "phase": "pre-fault",
+      "violation_count": 263
+    },
+    {
+      "check_count": 158,
+      "config_id": "C4",
+      "error_count": 4,
+      "error_rate": 0.01253918,
+      "latency_ms": {
+        "p50": 8.960639,
+        "p95": 47.747266,
+        "p99": 93.246576
+      },
+      "operation_count": 319,
+      "phase": "election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 410,
+      "config_id": "C4",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 5.660514,
+        "p95": 19.228191,
+        "p99": 39.382948
+      },
+      "operation_count": 820,
+      "phase": "post-election",
+      "violation_count": 0
+    },
+    {
+      "check_count": 215,
+      "config_id": "C4",
+      "error_count": 0,
+      "error_rate": 0.0,
+      "latency_ms": {
+        "p50": 7.875795,
+        "p95": 26.094215,
+        "p99": 51.320952
+      },
+      "operation_count": 430,
+      "phase": "pre-fault",
+      "violation_count": 0
+    }
+  ],
+  "recovery_rows": [
+    {
+      "config_id": "C1",
+      "first_successful_write_after_election_elapsed_ms": 23923.083678,
+      "first_successful_write_after_fault_elapsed_ms": 7075.966655
+    },
+    {
+      "config_id": "C2",
+      "first_successful_write_after_election_elapsed_ms": 23900.907988,
+      "first_successful_write_after_fault_elapsed_ms": 7092.714865
+    },
+    {
+      "config_id": "C3",
+      "first_successful_write_after_election_elapsed_ms": 23903.081948,
+      "first_successful_write_after_fault_elapsed_ms": 7044.411526
+    },
+    {
+      "config_id": "C4",
+      "first_successful_write_after_election_elapsed_ms": 23921.940588,
+      "first_successful_write_after_fault_elapsed_ms": 7085.146195
+    }
+  ],
+  "run_id": "t2-primary-partition-transition-formal-rerun-20260831T082655Z-b9f2cd1b",
+  "scenario": "T2-primary-partition-transition",
+  "seed": 20260831,
+  "started_at": "2026-08-31T08:26:55.719857+00:00",
+  "totals": {
+    "check_count": 3555,
+    "error_count": 16,
+    "group_count": 4,
+    "operation_count": 7125,
+    "violation_count": 808
+  },
+  "worker_results": {
+    "C1": {
+      "checks": 785,
+      "errors": 4,
+      "violations": 0
+    },
+    "C2": {
+      "checks": 801,
+      "errors": 4,
+      "violations": 0
+    },
+    "C3": {
+      "checks": 1186,
+      "errors": 4,
+      "violations": 808
+    },
+    "C4": {
+      "checks": 782,
+      "errors": 4,
+      "violations": 0
+    }
+  }
+}

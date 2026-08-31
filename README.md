@@ -10,6 +10,8 @@ The first normal-operation results are in
 [results/summary/BASELINE_S0_RESULTS.md](results/summary/BASELINE_S0_RESULTS.md).
 The formal node-failure and network-partition results are in
 [results/summary/FAULT_SCENARIO_RESULTS.md](results/summary/FAULT_SCENARIO_RESULTS.md).
+The election-window and controlled replication-lag results are in
+[results/summary/EXTENDED_EXPERIMENT_RESULTS.md](results/summary/EXTENDED_EXPERIMENT_RESULTS.md).
 
 ## Architecture
 
@@ -150,6 +152,41 @@ To recover the cluster manually after an interrupted run:
 ./scripts/restore_cluster.sh
 ./scripts/cluster_status.sh
 ```
+
+## Run the transition-window experiments
+
+These wrappers continuously run an RYW write/read pair for C1-C4 while the
+current Primary is stopped or partitioned. Each selected formal run lasts 35
+seconds so it includes pre-fault, election, and post-election operations.
+
+```bash
+./scripts/run_transition_scenario.sh \
+  T1-primary-stop-transition 20260830 formal 35 3
+
+./scripts/run_transition_scenario.sh \
+  T2-primary-partition-transition 20260830 formal 35 3
+```
+
+Repeat with seeds `20260831` and `20260832`. The last argument is the number of
+seconds to run before requesting the fault. Fault discovery, actual fault
+start, completed election, and cluster restoration are written to a companion
+fault-event JSONL file.
+
+## Run the S4 replication-lag experiment
+
+S4 pauses oplog application on one readable Secondary, runs all four models
+under C3, measures the resulting lag, waits for catch-up, and returns the
+containers to the normal command line:
+
+```bash
+./scripts/run_replication_lag_scenario.sh \
+  500 20260830,20260831,20260832 formal
+```
+
+This scenario uses `compose.s4.yaml` to enable MongoDB test commands and the
+`rsSyncApplyStop` failpoint. It is strictly an experiment configuration and
+must not be used in production. The cleanup trap disables the failpoint even
+when the workload exits with an error.
 
 ## Stop and restart
 

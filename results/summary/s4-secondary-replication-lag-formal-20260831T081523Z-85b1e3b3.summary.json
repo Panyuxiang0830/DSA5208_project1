@@ -1,0 +1,538 @@
+{
+  "aggregates": [
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.97496,
+        "p95": 7.757992,
+        "p99": 20.578167
+      },
+      "model": "monotonic-reads",
+      "operation_count": 3014,
+      "seed_count": 3,
+      "served_by": {
+        "mongo1:27017": 1514,
+        "mongo2:27017": 750,
+        "mongo3:27017": 750
+      },
+      "success_rate": 1.0,
+      "violation_count": 747,
+      "violation_rate": 0.498
+    },
+    {
+      "check_count": 3,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.51304,
+        "p95": 5.603457,
+        "p99": 13.368501
+      },
+      "model": "monotonic-writes",
+      "operation_count": 1503,
+      "seed_count": 3,
+      "served_by": {
+        "mongo1:27017": 1500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.317505,
+        "p95": 4.832116,
+        "p99": 10.258367
+      },
+      "model": "read-your-writes",
+      "operation_count": 3000,
+      "seed_count": 3,
+      "served_by": {
+        "mongo1:27017": 1500,
+        "mongo2:27017": 750,
+        "mongo3:27017": 750
+      },
+      "success_rate": 1.0,
+      "violation_count": 1250,
+      "violation_rate": 0.83333333
+    },
+    {
+      "check_count": 1500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.86286,
+        "p95": 9.61008,
+        "p99": 18.862857
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 5245,
+      "seed_count": 3,
+      "served_by": {
+        "mongo1:27017": 3745,
+        "mongo2:27017": 750,
+        "mongo3:27017": 750
+      },
+      "success_rate": 1.0,
+      "violation_count": 750,
+      "violation_rate": 0.5
+    }
+  ],
+  "combination_results": [
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 1.593243,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 426
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 2.534288,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 249
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 1.899433,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.488135,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260830,
+      "status": "ok",
+      "violations": 250
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.591512,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 402
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 1.933528,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 249
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 0.992283,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 5.268514,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260831,
+      "status": "ok",
+      "violations": 250
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 1.688695,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "read-your-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 422
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 3.343588,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 249
+    },
+    {
+      "checks": 1,
+      "config_id": "C3",
+      "duration_seconds": 1.423316,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "monotonic-writes",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 0
+    },
+    {
+      "checks": 500,
+      "config_id": "C3",
+      "duration_seconds": 5.131926,
+      "errors": 0,
+      "event_kind": "combination_summary",
+      "model": "writes-follow-reads",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seed": 20260832,
+      "status": "ok",
+      "violations": 250
+    }
+  ],
+  "finished_at": "2026-08-31T08:15:56.626551+00:00",
+  "groups": [
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.880691,
+        "p95": 9.151591,
+        "p99": 22.596692
+      },
+      "model": "monotonic-reads",
+      "operation_count": 916,
+      "seed": 20260830,
+      "served_by": {
+        "mongo1:27017": 416,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 249,
+      "violation_rate": 0.498
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.7046,
+        "p95": 3.919349,
+        "p99": 5.57705
+      },
+      "model": "monotonic-reads",
+      "operation_count": 1021,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 521,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 249,
+      "violation_rate": 0.498
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.53829,
+        "p95": 10.344697,
+        "p99": 26.497345
+      },
+      "model": "monotonic-reads",
+      "operation_count": 1077,
+      "seed": 20260832,
+      "served_by": {
+        "mongo1:27017": 577,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 249,
+      "violation_rate": 0.498
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.683031,
+        "p95": 6.85004,
+        "p99": 34.470724
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260830,
+      "served_by": {
+        "mongo1:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.33375,
+        "p95": 2.96512,
+        "p99": 4.46457
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 1,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.69174,
+        "p95": 5.87446,
+        "p99": 10.0515
+      },
+      "model": "monotonic-writes",
+      "operation_count": 501,
+      "seed": 20260832,
+      "served_by": {
+        "mongo1:27017": 500
+      },
+      "success_rate": 1.0,
+      "violation_count": 0,
+      "violation_rate": 0.0
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.17353,
+        "p95": 2.487186,
+        "p99": 3.984226
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260830,
+      "served_by": {
+        "mongo1:27017": 500,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 426,
+      "violation_rate": 0.852
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.850665,
+        "p95": 7.712957,
+        "p99": 25.196341
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 500,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 402,
+      "violation_rate": 0.804
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 1.169755,
+        "p95": 3.099307,
+        "p99": 4.865846
+      },
+      "model": "read-your-writes",
+      "operation_count": 1000,
+      "seed": 20260832,
+      "served_by": {
+        "mongo1:27017": 500,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 422,
+      "violation_rate": 0.844
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.468095,
+        "p95": 5.799795,
+        "p99": 9.394101
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 1708,
+      "seed": 20260830,
+      "served_by": {
+        "mongo1:27017": 1208,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 250,
+      "violation_rate": 0.5
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 3.34957,
+        "p95": 11.268234,
+        "p99": 22.476025
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 1748,
+      "seed": 20260831,
+      "served_by": {
+        "mongo1:27017": 1248,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 250,
+      "violation_rate": 0.5
+    },
+    {
+      "check_count": 500,
+      "config_id": "C3",
+      "error_count": 0,
+      "latency_ms": {
+        "p50": 2.92034,
+        "p95": 10.31072,
+        "p99": 25.85333
+      },
+      "model": "writes-follow-reads",
+      "operation_count": 1789,
+      "seed": 20260832,
+      "served_by": {
+        "mongo1:27017": 1289,
+        "mongo2:27017": 250,
+        "mongo3:27017": 250
+      },
+      "success_rate": 1.0,
+      "violation_count": 250,
+      "violation_rate": 0.5
+    }
+  ],
+  "label": "formal",
+  "metadata": [
+    {
+      "configs": [
+        "C3"
+      ],
+      "event_kind": "suite_metadata",
+      "hosts": [
+        "mongo1:27017",
+        "mongo2:27017",
+        "mongo3:27017"
+      ],
+      "iterations": 500,
+      "label": "formal",
+      "models": [
+        "read-your-writes",
+        "monotonic-reads",
+        "monotonic-writes",
+        "writes-follow-reads"
+      ],
+      "mongodb_version": "8.0.29",
+      "primary": "mongo1:27017",
+      "pymongo_version": "4.17.0",
+      "python_version": "3.12.14",
+      "replica_set": "rs0",
+      "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+      "scenario": "S4-secondary-replication-lag",
+      "seeds": [
+        20260830,
+        20260831,
+        20260832
+      ],
+      "started_at": "2026-08-31T08:15:23.171170+00:00"
+    }
+  ],
+  "run_id": "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3",
+  "scenario": "S4-secondary-replication-lag",
+  "started_at": "2026-08-31T08:15:23.171170+00:00",
+  "totals": {
+    "check_count": 4503,
+    "error_count": 0,
+    "group_count": 12,
+    "operation_count": 12762,
+    "violation_count": 2747
+  }
+}

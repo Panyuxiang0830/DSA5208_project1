@@ -8,7 +8,11 @@ previous_primary="$(discover_primary)"
 target_container="$(container_name "${previous_primary}")"
 write_fault_state "primary-partition" "${previous_primary}" "${previous_primary}"
 
+if [[ -n "${TRANSITION_FAULT_MARKER:-}" ]]; then
+  touch "${TRANSITION_FAULT_MARKER}"
+fi
 started_ns="$(date +%s%N)"
+emit_event "fault_started" "primary-partition" "${previous_primary}" "${previous_primary}"
 docker network disconnect "${MONGO_NETWORK}" "${target_container}"
 read -r new_primary election_ms < <(
   wait_for_new_primary "${previous_primary}" "${started_ns}" 45

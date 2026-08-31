@@ -8,7 +8,7 @@
 - 计划数据库：MongoDB Community（最终固定到明确的 `8.0.x` 镜像版本与镜像摘要）
 - 计划部署：一台 Google Cloud Ubuntu VM 上的 3 个 Docker 容器
 - 客户端与实验工具：Python、PyMongo、Docker Compose
-- 当前状态：已完成部署、S0 正常基线以及 S1-S3 节点故障/网络分区正式实验；下一阶段为选举窗口与恢复后扩展实验、图表和 PDF 报告
+- 当前状态：已完成部署、S0-S3 正式实验、选举过渡窗口实验和 S4 受控复制延迟实验；下一阶段为图表和 PDF 报告
 
 > 本计划是执行基线。数据库、驱动、操作系统和 Docker 的精确版本将在首次成功部署后记录并锁定。
 
@@ -171,7 +171,7 @@ MongoDB Replica Set 的写入由 Primary 处理，本实验预期 MW 较难被�
 | S1 Secondary 故障 | 停止一个 Secondary 容器 | `majority` 是否仍可用、Secondary 读取如何退化 |
 | S2 Primary 故障 | 停止当前 Primary | 选举时间、重试行为、短期不可用和一致性结果 |
 | S3 Primary 与多数派分区 | 隔离当前 Primary 与两个 Secondary | 原 Primary 降级、多数派重新选举、读写行为 |
-| S4 单个 Secondary 网络延迟/分区 | 限制客户端或复制流量 | 放大复制滞后，观察弱配置下的旧读和 MR 违反 |
+| S4 单个 Secondary 复制暂停 | 使用测试 failpoint 暂停一个可读 Secondary 的 oplog 应用 | 放大复制滞后，观察弱配置下的旧读、MR 和 WFR 违反 |
 | S5 节点恢复 | 恢复网络或容器 | 数据追赶时间、恢复后的读取和可能的回滚 |
 
 故障控制脚本必须：

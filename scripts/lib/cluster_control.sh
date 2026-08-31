@@ -137,8 +137,56 @@ emit_event() {
   local previous_primary="$4"
   local new_primary="${5:-}"
   local election_ms="${6:-}"
-  printf '{"event":"%s","kind":"%s","target":"%s","previous_primary":"%s","new_primary":"%s","election_ms":"%s","timestamp":"%s"}\n' \
-    "${event}" "${kind}" "${target}" "${previous_primary}" "${new_primary}" "${election_ms}" "$(timestamp_utc)"
+  local recovery_ms="${7:-}"
+  printf '{"event":"%s","kind":"%s","target":"%s","previous_primary":"%s","new_primary":"%s","election_ms":"%s","recovery_ms":"%s","timestamp":"%s"}\n' \
+    "${event}" "${kind}" "${target}" "${previous_primary}" "${new_primary}" "${election_ms}" "${recovery_ms}" "$(timestamp_utc)"
+}
+
+replication_lag_seconds() {
+  local target="${1:-}"
+  local primary primary_container
+  primary="$(discover_primary)"
+  primary_container="$(container_name "${primary}")"
+  docker exec "${primary_container}" mongosh --quiet --eval "
+    const status = rs.status();
+    const primary = status.members.find((member) => member.state === 1);
+    const candidates = status.members.filter((member) =>
+      member.health === 1 && (member.state === 1 || member.state === 2));
+    if (!primary || candidates.length !== 3) {
+      print(-1);
+    } else if ('${target}' !== '') {
+      const selected = candidates.find((member) =>
+        member.name === '${target}:27017');
+      print(selected ? Math.max(0, (primary.optimeDate - selected.optimeDate) / 1000) : -1);
+    } else {
+      const times = candidates.map((member) => member.optimeDate.getTime());
+      print((Math.max(...times) - Math.min(...times)) / 1000);
+    }
+  " 2>/dev/null | tail -n 1
+}
+
+wait_for_replication_caught_up() {
+  local timeout_seconds="${1:-120}"
+  local maximum_lag_seconds="${2:-1}"
+  local deadline=$((SECONDS + timeout_seconds))
+  local lag stable_checks=0
+
+  while ((SECONDS < deadline)); do
+    lag="$(replication_lag_seconds 2>/dev/null || printf '%s' -1)"
+    if awk -v lag="${lag}" -v maximum="${maximum_lag_seconds}" \
+      'BEGIN { exit !(lag >= 0 && lag <= maximum) }'; then
+      stable_checks=$((stable_checks + 1))
+      if [[ "${stable_checks}" -ge 3 ]]; then
+        return 0
+      fi
+    else
+      stable_checks=0
+    fi
+    sleep 1
+  done
+
+  echo "Replica Set did not catch up within ${timeout_seconds}s; lag=${lag}s." >&2
+  return 1
 }
 
 wait_for_new_primary() {

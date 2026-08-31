@@ -142,14 +142,14 @@ excluded from Git because of their size.
   network. The containers do not provide independent machine-level failure
   domains.
 - The runner waited for a replacement Primary before starting the workload.
-  A separate transition-window experiment is needed to measure request errors,
-  timeouts, and latency while an election is actively occurring.
+  This limitation is addressed by the selected T1/T2 transition-window runs in
+  `EXTENDED_EXPERIMENT_RESULTS.md`.
 - The S3 Docker-network disconnection isolated the old Primary from both peers
   and the client. It does not test clients attached independently to both sides
   of a partition.
 - With only one surviving Secondary, the fault scenarios cannot reproduce the
   cross-Secondary switching used by the S0 MR test. A targeted S4 replication
-  delay or client-to-node partition is needed to stress MR under failure.
+  delay is reported in `EXTENDED_EXPERIMENT_RESULTS.md`.
 - No observed violation is not proof of a guarantee; results are limited to the
   tested topology, driver settings, workload, and seeds.
 - Background-write counts are workload-support operations rather than

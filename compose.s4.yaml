@@ -1,0 +1,25 @@
+# Test-only override used by scripts/run_replication_lag_scenario.sh.
+# It enables MongoDB failpoints so one Secondary can remain readable while
+# deliberately pausing oplog application. Do not use this override in production.
+
+x-s4-mongo-command: &s4-mongo-command
+  - mongod
+  - --replSet
+  - rs0
+  - --bind_ip_all
+  - --port
+  - "27017"
+  - --oplogSize
+  - "256"
+  - --wiredTigerCacheSizeGB
+  - ${MONGO_CACHE_GB:-0.5}
+  - --setParameter
+  - enableTestCommands=1
+
+services:
+  mongo1:
+    command: *s4-mongo-command
+  mongo2:
+    command: *s4-mongo-command
+  mongo3:
+    command: *s4-mongo-command
