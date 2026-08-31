@@ -202,9 +202,38 @@ def styles(lang: str):
         "title": ParagraphStyle("Title" + lang, parent=s["Title"], fontName=bold, fontSize=25, leading=31, textColor=NAVY, alignment=TA_LEFT, spaceAfter=8, wordWrap="CJK" if lang == "zh" else None),
         "subtitle": ParagraphStyle("Subtitle" + lang, parent=body, fontName=font, fontSize=13, leading=19, textColor=BLUE, alignment=TA_LEFT),
         "meta": ParagraphStyle("Meta" + lang, parent=body, fontName=font, fontSize=9.2, leading=15, textColor=MUTED),
-        "callout": ParagraphStyle("Callout" + lang, parent=body, fontName=bold, fontSize=10.2, leading=15.2, textColor=NAVY, leftIndent=7 * mm, rightIndent=7 * mm, borderColor=TEAL, borderWidth=0.8, borderPadding=8, backColor=PALE, spaceBefore=7, spaceAfter=9),
+        "callout": ParagraphStyle(
+            "Callout" + lang,
+            parent=body,
+            fontName=bold,
+            fontSize=9.3,
+            leading=15.0,
+            textColor=NAVY,
+            leftIndent=7 * mm,
+            rightIndent=7 * mm,
+            borderColor=TEAL,
+            borderWidth=0.8,
+            borderPadding=10,
+            backColor=PALE,
+            spaceBefore=10,
+            spaceAfter=13,
+        ),
         "bullet": ParagraphStyle("Bullet" + lang, parent=body, leftIndent=5.5 * mm, firstLineIndent=-3.5 * mm, bulletIndent=0, spaceAfter=3),
-        "code": ParagraphStyle("Code" + lang, parent=body, fontName=mono, fontSize=7.1, leading=10.2, leftIndent=4 * mm, rightIndent=4 * mm, borderColor=GRID, borderWidth=0.5, borderPadding=6, backColor=PALE2, spaceBefore=4, spaceAfter=6),
+        "code": ParagraphStyle(
+            "Code" + lang,
+            parent=body,
+            fontName=mono,
+            fontSize=7.1,
+            leading=10.8,
+            leftIndent=4 * mm,
+            rightIndent=4 * mm,
+            borderColor=GRID,
+            borderWidth=0.5,
+            borderPadding=10,
+            backColor=PALE2,
+            spaceBefore=8,
+            spaceAfter=13,
+        ),
         "table": ParagraphStyle("Table" + lang, parent=body, fontSize=7.1, leading=9.5, alignment=TA_LEFT, spaceAfter=0),
         "table_head": ParagraphStyle("TableHead" + lang, parent=body, fontName=bold, fontSize=7.2, leading=9.4, textColor=colors.white, alignment=TA_CENTER, spaceAfter=0),
         "ref": ParagraphStyle("Ref" + lang, parent=body, fontSize=7.5, leading=10.5, alignment=TA_LEFT, leftIndent=4 * mm, firstLineIndent=-4 * mm, spaceAfter=4),
@@ -283,7 +312,7 @@ def cover(story, lang: str, st):
         if lang == "zh"
         else "Main finding: causal sessions with majority reads and writes preserved all four guarantees for successful operations; weak reads exposed all three read-related anomalies under controlled replication lag."
     )
-    story.append(p(claim, st["callout"]))
+    story.append(KeepTogether([p(claim, st["callout"])]))
     story.append(Spacer(1, 6 * mm))
     story.append(p("Repository: github.com/Panyuxiang0830/DSA5208_project1", st["small"]))
     story.append(PageBreak())
@@ -414,13 +443,16 @@ docker compose run --rm --no-deps runner"""
     ]
     story.append(make_table(scenario_data, [14*mm, 73*mm, 80*mm], st))
 
+    # Give the fault-injection rationale its own page. This keeps the bordered
+    # callout with its explanatory paragraph and avoids an isolated card.
+    story.append(PageBreak())
     section(story, "5.2 故障注入与恢复" if z else "5.2 Fault Injection and Recovery", st, 2)
     story.append(p(
         "S1 与 S2 使用 Docker 停止指定角色的容器。S3 使用 docker network disconnect 将故障前 Primary 从副本集网络断开，使剩余两节点形成多数派并选出新 Primary。T1/T2 在故障前启动四种配置的并发循环，把请求按开始时间标注为 pre、election 或 post。S4 仅在测试专用 compose 覆盖中启用 enableTestCommands=1，并对一个 Secondary 执行 rsSyncApplyStop；完成后执行 rsSyncApplyStop 的逆操作、等待追平，并重新创建普通容器。每个故障场景结束后均运行 restore_cluster.sh 和 cluster_status.sh 验证三节点健康。" if z else
         "S1 and S2 stop the container holding the selected role. S3 uses docker network disconnect to isolate the pre-fault Primary from the replica-set network; the remaining two members retain a majority and elect a new Primary. T1/T2 start concurrent loops for all four configurations before fault injection and label requests by operation start time as pre, election, or post. S4 enables enableTestCommands=1 only in a test-specific Compose override and runs rsSyncApplyStop on one Secondary; afterward, apply processing is resumed, catch-up is verified, and normal containers are recreated. Every scenario ends with restore_cluster.sh and cluster_status.sh to confirm a healthy three-member set.", st["body"]))
-    story.append(p(
+    story.append(KeepTogether([p(
         "设计理由：S0-S3 区分稳态一致性，T1/T2 捕获常被“等待选举完成”掩盖的短暂不可用窗口，S4 则提供可控因果机制，以验证 C3 的异常确实来自副本落后而非测试噪声。" if z else
-        "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st["callout"]))
+        "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st["callout"])]))
 
     # Start the results on a clean page so the rationale callout and next
     # chapter heading do not compete for the final lines of the design page.
@@ -496,9 +528,9 @@ docker compose run --rm --no-deps runner"""
         ["C4", "本负载中成立，但不是通用因果保证" if z else "Holds here, not a general causal guarantee", "本实验零违例" if z else "Zero violations in this workload", "有限支持" if z else "Supported within scope"],
     ]
     story.append(make_table(pred_data, [18*mm, 48*mm, 72*mm, 29*mm], st))
-    story.append(p(
+    story.append(KeepTogether([p(
         "最重要的区分是安全性与可用性。强配置没有把选举期间的失败请求伪装成一致性违例：它们拒绝或重试无法安全完成的操作，而成功完成的历史继续满足 RYW。相反，C3 提供低延迟和较高可用读取，但允许成功返回旧版本。" if z else
-        "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st["callout"]))
+        "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st["callout"])]))
 
     # Give the conclusion callout enough breathing room before the limitations.
     story.append(Spacer(1, 5 * mm))
