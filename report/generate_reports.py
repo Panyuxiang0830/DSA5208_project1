@@ -267,14 +267,14 @@ def cover(story, lang: str, st):
         story.append(p("MongoDB 可调一致性与<br/>客户端中心一致性实验", st["title"]))
         story.append(Spacer(1, 4 * mm))
         story.append(p("项目一 · 完整实验报告（中文版）", st["subtitle"]))
-        meta = "作者：Panyuxiang、Hou Jiacheng、Wu Jiarui<br/>提交日期：2026 年 9 月 27 日<br/>实验平台：Google Cloud Compute Engine（新加坡）"
+        meta = "作者：Pan Yuxiang、Hou Jiacheng、Wu Jiarui<br/>提交日期：2026 年 9 月 27 日<br/>实验平台：Google Cloud Compute Engine（新加坡）"
     else:
         story.append(p("DSA5208 Scalable Distributed Computing for Data Science", st["subtitle"]))
         story.append(Spacer(1, 5 * mm))
         story.append(p("Tunable Consistency and<br/>Client-Centric Guarantees in MongoDB", st["title"]))
         story.append(Spacer(1, 4 * mm))
         story.append(p("Project 1 · Complete Experimental Report (English Edition)", st["subtitle"]))
-        meta = "Prepared by: Panyuxiang, Hou Jiacheng, and Wu Jiarui<br/>Submission date: 27 September 2026<br/>Experimental platform: Google Cloud Compute Engine (Singapore)"
+        meta = "Prepared by: Pan Yuxiang, Hou Jiacheng, and Wu Jiarui<br/>Submission date: 27 September 2026<br/>Experimental platform: Google Cloud Compute Engine (Singapore)"
     story.append(Spacer(1, 23 * mm))
     story.append(p(meta, st["meta"]))
     story.append(Spacer(1, 20 * mm))
@@ -614,7 +614,7 @@ def build(lang: str, filename: str):
         topMargin=20 * mm,
         bottomMargin=18 * mm,
         title=title,
-        author="Panyuxiang; Hou Jiacheng; Wu Jiarui",
+        author="Pan Yuxiang; Hou Jiacheng; Wu Jiarui",
         subject="DSA5208 Project 1 experimental report",
     )
     doc.multiBuild(report_content(lang, st))
