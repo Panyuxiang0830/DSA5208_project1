@@ -215,8 +215,8 @@ def styles(lang: str):
             borderWidth=0.8,
             borderPadding=10,
             backColor=PALE,
-            spaceBefore=10,
-            spaceAfter=13,
+            spaceBefore=0,
+            spaceAfter=0,
         ),
         "bullet": ParagraphStyle("Bullet" + lang, parent=body, leftIndent=5.5 * mm, firstLineIndent=-3.5 * mm, bulletIndent=0, spaceAfter=3),
         "code": ParagraphStyle(
@@ -231,8 +231,8 @@ def styles(lang: str):
             borderWidth=0.5,
             borderPadding=10,
             backColor=PALE2,
-            spaceBefore=8,
-            spaceAfter=13,
+            spaceBefore=0,
+            spaceAfter=0,
         ),
         "table": ParagraphStyle("Table" + lang, parent=body, fontSize=7.1, leading=9.5, alignment=TA_LEFT, spaceAfter=0),
         "table_head": ParagraphStyle("TableHead" + lang, parent=body, fontName=bold, fontSize=7.2, leading=9.4, textColor=colors.white, alignment=TA_CENTER, spaceAfter=0),
@@ -246,6 +246,20 @@ def p(text: str, st, **kwargs) -> Paragraph:
 
 def bullet(text: str, st) -> Paragraph:
     return Paragraph("• " + text, st)
+
+
+def append_callout(story, text: str, st) -> None:
+    """Add a bordered callout with explicit whitespace outside the border."""
+    story.append(Spacer(1, 5 * mm))
+    story.append(KeepTogether([p(text, st["callout"])]))
+    story.append(Spacer(1, 5 * mm))
+
+
+def append_code_block(story, text: str, st) -> None:
+    """Add a code panel with explicit whitespace outside the border."""
+    story.append(Spacer(1, 5 * mm))
+    story.append(p(text, st["code"]))
+    story.append(Spacer(1, 5 * mm))
 
 
 def make_table(data, widths, st, header=True, aligns=None, font_size=7.0):
@@ -312,8 +326,7 @@ def cover(story, lang: str, st):
         if lang == "zh"
         else "Main finding: causal sessions with majority reads and writes preserved all four guarantees for successful operations; weak reads exposed all three read-related anomalies under controlled replication lag."
     )
-    story.append(KeepTogether([p(claim, st["callout"])]))
-    story.append(Spacer(1, 6 * mm))
+    append_callout(story, claim, st)
     story.append(p("Repository: github.com/Panyuxiang0830/DSA5208_project1", st["small"]))
     story.append(PageBreak())
 
@@ -405,7 +418,7 @@ docker compose run --rm mongo-init
 ./scripts/cluster_status.sh
 docker compose build runner
 docker compose run --rm --no-deps runner"""
-    story.append(p(install.replace("\n", "<br/>"), st["code"]))
+    append_code_block(story, install.replace("\n", "<br/>"), st)
     story.append(p(
         "初始化脚本创建三名投票且存储数据的副本集成员。正常状态下一个节点为 Primary、两个节点为 Secondary；选举由 MongoDB 副本集协议负责。容器删除或重启不会删除 named volume，因此数据库文件在常规恢复流程中保留。" if z else
         "The initialization script creates three voting, data-bearing replica-set members. Under normal operation one member is Primary and two are Secondary; MongoDB's replica-set protocol controls elections. Removing or restarting containers does not remove named volumes, so database files survive normal recovery procedures.", st["body"]))
@@ -450,9 +463,9 @@ docker compose run --rm --no-deps runner"""
     story.append(p(
         "S1 与 S2 使用 Docker 停止指定角色的容器。S3 使用 docker network disconnect 将故障前 Primary 从副本集网络断开，使剩余两节点形成多数派并选出新 Primary。T1/T2 在故障前启动四种配置的并发循环，把请求按开始时间标注为 pre、election 或 post。S4 仅在测试专用 compose 覆盖中启用 enableTestCommands=1，并对一个 Secondary 执行 rsSyncApplyStop；完成后执行 rsSyncApplyStop 的逆操作、等待追平，并重新创建普通容器。每个故障场景结束后均运行 restore_cluster.sh 和 cluster_status.sh 验证三节点健康。" if z else
         "S1 and S2 stop the container holding the selected role. S3 uses docker network disconnect to isolate the pre-fault Primary from the replica-set network; the remaining two members retain a majority and elect a new Primary. T1/T2 start concurrent loops for all four configurations before fault injection and label requests by operation start time as pre, election, or post. S4 enables enableTestCommands=1 only in a test-specific Compose override and runs rsSyncApplyStop on one Secondary; afterward, apply processing is resumed, catch-up is verified, and normal containers are recreated. Every scenario ends with restore_cluster.sh and cluster_status.sh to confirm a healthy three-member set.", st["body"]))
-    story.append(KeepTogether([p(
+    append_callout(story,
         "设计理由：S0-S3 区分稳态一致性，T1/T2 捕获常被“等待选举完成”掩盖的短暂不可用窗口，S4 则提供可控因果机制，以验证 C3 的异常确实来自副本落后而非测试噪声。" if z else
-        "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st["callout"])]))
+        "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st)
 
     # Start the results on a clean page so the rationale callout and next
     # chapter heading do not compete for the final lines of the design page.
@@ -528,12 +541,9 @@ docker compose run --rm --no-deps runner"""
         ["C4", "本负载中成立，但不是通用因果保证" if z else "Holds here, not a general causal guarantee", "本实验零违例" if z else "Zero violations in this workload", "有限支持" if z else "Supported within scope"],
     ]
     story.append(make_table(pred_data, [18*mm, 48*mm, 72*mm, 29*mm], st))
-    story.append(KeepTogether([p(
+    append_callout(story,
         "最重要的区分是安全性与可用性。强配置没有把选举期间的失败请求伪装成一致性违例：它们拒绝或重试无法安全完成的操作，而成功完成的历史继续满足 RYW。相反，C3 提供低延迟和较高可用读取，但允许成功返回旧版本。" if z else
-        "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st["callout"])]))
-
-    # Give the conclusion callout enough breathing room before the limitations.
-    story.append(Spacer(1, 5 * mm))
+        "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st)
 
     section(story, "8. 局限性与有效性威胁" if z else "8. Limitations and Threats to Validity", st)
     limits = [
@@ -580,7 +590,7 @@ docker compose run --rm --no-deps runner python -m experiments.run_baseline \\
 ./scripts/restore_cluster.sh
 ./scripts/cluster_status.sh
 python3 -m analysis.generate_report_figures"""
-    story.append(p(commands.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>"), st["code"]))
+    append_code_block(story, commands.replace("&", "&amp;").replace("<", "&lt;").replace("\n", "<br/>"), st)
     story.append(p(
         "仓库保存 compose 配置、初始化脚本、故障注入脚本、Python 工作负载、正式 summary JSON、汇总说明和生成图表的代码。原始 JSONL 可由上述命令重新生成。为避免意外计费，实验结束后应在 Google Cloud 控制台停止 VM，并确认实例状态为 TERMINATED；持久磁盘仍可能持续计费。" if z else
         "The repository contains Compose configuration, initialization and fault scripts, Python workloads, formal summary JSON, result narratives, and chart-generation code. Raw JSONL can be regenerated with the commands above. To avoid unintended compute charges, stop the VM in Google Cloud after experiments and verify TERMINATED status; persistent disk may continue to incur storage charges.", st["body"]))
