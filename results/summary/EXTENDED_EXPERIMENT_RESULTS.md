@@ -142,6 +142,20 @@ distinct properties rather than one linear strength ordering.
 Machine-readable summaries are committed in this directory. Raw JSONL logs
 remain on the experiment VM and in the local ignored `results/raw/` directory.
 
+## Report-ready figures
+
+![Consistency violation matrix](../figures/01_consistency_violation_matrix.png)
+
+![Transition-window outcomes](../figures/02_transition_window_outcomes.png)
+
+![Fault timing](../figures/03_fault_timing.png)
+
+![S4 violation rates](../figures/04_s4_model_violation_rates.png)
+
+The figures can be regenerated from the committed summaries with
+`python3 -m analysis.generate_report_figures`. Both 300-DPI PNG and vector SVG
+versions are stored in `results/figures/`.
+
 ## Limitations
 
 - The transition workload focuses on RYW so that all four configurations can

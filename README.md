@@ -12,6 +12,8 @@ The formal node-failure and network-partition results are in
 [results/summary/FAULT_SCENARIO_RESULTS.md](results/summary/FAULT_SCENARIO_RESULTS.md).
 The election-window and controlled replication-lag results are in
 [results/summary/EXTENDED_EXPERIMENT_RESULTS.md](results/summary/EXTENDED_EXPERIMENT_RESULTS.md).
+Report-ready PNG and SVG charts are in
+[results/figures/](results/figures/).
 
 ## Architecture
 

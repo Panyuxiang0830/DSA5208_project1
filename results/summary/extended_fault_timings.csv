@@ -1,0 +1,9 @@
+metric_group,scenario,seed,metric,value_ms
+election,T1 Primary stopped,20260830,election duration,12945
+election,T1 Primary stopped,20260831,election duration,16048
+election,T1 Primary stopped,20260832,election duration,5008
+election,T2 Primary partitioned,20260830,election duration,12055
+election,T2 Primary partitioned,20260831,election duration,16844
+election,T2 Primary partitioned,20260832,election duration,16225
+replication,S4 replication lag,all,lag at workload end,38000
+replication,S4 replication lag,all,catch-up duration,27051
