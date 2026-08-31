@@ -267,14 +267,14 @@ def cover(story, lang: str, st):
         story.append(p("MongoDB 可调一致性与<br/>客户端中心一致性实验", st["title"]))
         story.append(Spacer(1, 4 * mm))
         story.append(p("项目一 · 完整实验报告（中文版）", st["subtitle"]))
-        meta = "作者：Panyuxiang<br/>提交日期：2026 年 9 月 27 日<br/>实验平台：Google Cloud Compute Engine（新加坡）"
+        meta = "作者：Panyuxiang、Hou Jiacheng、Wu Jiarui<br/>提交日期：2026 年 9 月 27 日<br/>实验平台：Google Cloud Compute Engine（新加坡）"
     else:
         story.append(p("DSA5208 Scalable Distributed Computing for Data Science", st["subtitle"]))
         story.append(Spacer(1, 5 * mm))
         story.append(p("Tunable Consistency and<br/>Client-Centric Guarantees in MongoDB", st["title"]))
         story.append(Spacer(1, 4 * mm))
         story.append(p("Project 1 · Complete Experimental Report (English Edition)", st["subtitle"]))
-        meta = "Prepared by: Panyuxiang<br/>Submission date: 27 September 2026<br/>Experimental platform: Google Cloud Compute Engine (Singapore)"
+        meta = "Prepared by: Panyuxiang, Hou Jiacheng, and Wu Jiarui<br/>Submission date: 27 September 2026<br/>Experimental platform: Google Cloud Compute Engine (Singapore)"
     story.append(Spacer(1, 23 * mm))
     story.append(p(meta, st["meta"]))
     story.append(Spacer(1, 20 * mm))
@@ -422,6 +422,10 @@ docker compose run --rm --no-deps runner"""
         "设计理由：S0-S3 区分稳态一致性，T1/T2 捕获常被“等待选举完成”掩盖的短暂不可用窗口，S4 则提供可控因果机制，以验证 C3 的异常确实来自副本落后而非测试噪声。" if z else
         "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st["callout"]))
 
+    # Start the results on a clean page so the rationale callout and next
+    # chapter heading do not compete for the final lines of the design page.
+    story.append(PageBreak())
+
     section(story, "6. 结果" if z else "6. Results", st)
     section(story, "6.1 S0-S3：稳态矩阵" if z else "6.1 S0-S3: Stable-State Matrix", st, 2)
     story.append(p(
@@ -495,6 +499,9 @@ docker compose run --rm --no-deps runner"""
     story.append(p(
         "最重要的区分是安全性与可用性。强配置没有把选举期间的失败请求伪装成一致性违例：它们拒绝或重试无法安全完成的操作，而成功完成的历史继续满足 RYW。相反，C3 提供低延迟和较高可用读取，但允许成功返回旧版本。" if z else
         "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st["callout"]))
+
+    # Give the conclusion callout enough breathing room before the limitations.
+    story.append(Spacer(1, 5 * mm))
 
     section(story, "8. 局限性与有效性威胁" if z else "8. Limitations and Threats to Validity", st)
     limits = [
@@ -607,7 +614,7 @@ def build(lang: str, filename: str):
         topMargin=20 * mm,
         bottomMargin=18 * mm,
         title=title,
-        author="Panyuxiang",
+        author="Panyuxiang; Hou Jiacheng; Wu Jiarui",
         subject="DSA5208 Project 1 experimental report",
     )
     doc.multiBuild(report_content(lang, st))
