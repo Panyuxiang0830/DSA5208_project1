@@ -5,6 +5,7 @@ __pycache__/
 *.py[cod]
 *.log
 .fault-state/
+tmp/
 
 # Experiment outputs can become large. Keep directory placeholders and
 # intentionally selected summaries, but do not commit local raw runs by default.

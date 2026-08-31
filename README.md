@@ -225,3 +225,15 @@ docker compose down --volumes
 
 After the first deployment, record `docker version`, `docker compose version`,
 the MongoDB image digest, the Ubuntu version, and the Google Cloud VM type.
+
+## Final reports
+
+- [English PDF](output/pdf/DSA5208_Project1_Report_EN.pdf)
+- [中文 PDF](output/pdf/DSA5208_Project1_Report_ZH.pdf)
+
+Regenerate both editions from the recorded summaries and figures with:
+
+```bash
+python3 -m pip install -r report/requirements.txt
+python3 report/generate_reports.py
+```
