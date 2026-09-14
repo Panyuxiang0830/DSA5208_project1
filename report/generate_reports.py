@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
-"""Generate the Chinese and English final project reports as polished PDFs."""
+"""Generate the Chinese and English final project reports as polished PDFs.
+
+Every table and every headline statistic in this report is computed from the
+committed machine-readable summaries in ``results/summary/*.json`` (and the
+election/replication-lag timings in
+``results/summary/extended_fault_timings.csv``) at build time -- nothing here
+is retyped by hand. If the underlying experiments are rerun and the summary
+files change, rerunning this script picks up the new numbers automatically.
+"""
 
 from __future__ import annotations
 
+import csv
+import json
 import os
 import shutil
 from pathlib import Path
+from statistics import mean
+from typing import Any
 
 from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.lib import colors
@@ -34,12 +46,31 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "output" / "pdf"
-USER_OUT = Path(
-    "/Users/panyuxiang/Documents/Codex/2026-08-30/"
-    "1-project-description-in-this-project/outputs"
-)
+SUMMARY_DIR = ROOT / "results" / "summary"
+# Optional extra copy of the built PDFs (e.g. a personal sync folder). Unset by
+# default so the build never fails or writes outside the repo on someone
+# else's machine; set REPORT_EXTRA_OUTPUT_DIR to opt in.
+USER_OUT = Path(os.environ["REPORT_EXTRA_OUTPUT_DIR"]).expanduser() if os.environ.get(
+    "REPORT_EXTRA_OUTPUT_DIR"
+) else None
 FIG = ROOT / "results" / "figures"
-FONT = Path("/System/Library/Fonts/Supplemental/Arial Unicode.ttf")
+
+# Candidate Unicode/CJK font files, checked in order. The first one that both
+# exists on disk AND can be loaded by reportlab's pure-Python TrueType parser
+# (which cannot read PostScript/CFF outlines, so most Linux "Noto ... CJK"
+# packages are skipped in favor of a TrueType-outline fallback) is used. This
+# lets the report build on the original author's Mac, on a teammate's Linux
+# or Windows machine, and in CI without editing the script. Override with the
+# REPORT_FONT_PATH environment variable to force a specific file.
+FONT_CANDIDATES = [
+    os.environ.get("REPORT_FONT_PATH"),
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",  # macOS
+    "/System/Library/Fonts/STHeiti Light.ttc",  # macOS (Chinese)
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",  # Debian/Ubuntu (fonts-wqy-zenhei)
+    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",  # Debian/Ubuntu (fonts-wqy-microhei)
+    "C:/Windows/Fonts/msyh.ttc",  # Windows (Microsoft YaHei)
+    "C:/Windows/Fonts/simhei.ttf",  # Windows (SimHei)
+]
 
 NAVY = colors.HexColor("#123047")
 BLUE = colors.HexColor("#1F6F8B")
@@ -53,9 +84,72 @@ GRID = colors.HexColor("#C9D7DC")
 
 
 def register_fonts() -> None:
-    if not FONT.exists():
-        raise FileNotFoundError(f"Required Unicode font not found: {FONT}")
-    pdfmetrics.registerFont(TTFont("ArialUnicode", str(FONT)))
+    """Register a CJK-capable TrueType font under the name "ArialUnicode".
+
+    Tries REPORT_FONT_PATH and a list of common macOS/Linux/Windows font
+    locations, skipping files that don't exist and files reportlab's
+    TrueType parser cannot read (e.g. CFF-outline .otf/.ttc). Raises a clear,
+    actionable error only if nothing usable was found.
+    """
+    tried: list[str] = []
+    for candidate in FONT_CANDIDATES:
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if not path.exists():
+            continue
+        tried.append(str(path))
+        try:
+            pdfmetrics.registerFont(TTFont("ArialUnicode", str(path)))
+            return
+        except Exception:
+            continue
+    raise FileNotFoundError(
+        "No usable CJK TrueType font was found. Checked: "
+        + (", ".join(tried) if tried else "no candidate paths existed")
+        + ". Install a CJK font (e.g. `sudo apt install fonts-wqy-zenhei` on "
+        "Debian/Ubuntu, or Microsoft YaHei on Windows) or set the "
+        "REPORT_FONT_PATH environment variable to a .ttf/.ttc file with "
+        "TrueType (not PostScript/CFF) outlines."
+    )
+
+
+def load_one(pattern: str) -> dict[str, Any]:
+    """Load the single results/summary/*.json file matching pattern."""
+    matches = sorted(SUMMARY_DIR.glob(pattern))
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected exactly one summary file for {pattern!r}, found {matches}")
+    return json.loads(matches[0].read_text(encoding="utf-8"))
+
+
+def load_many(pattern: str) -> list[dict[str, Any]]:
+    """Load every results/summary/*.json file matching pattern, sorted by name."""
+    matches = sorted(SUMMARY_DIR.glob(pattern))
+    if not matches:
+        raise RuntimeError(f"No summary files matched {pattern!r}")
+    return [json.loads(path.read_text(encoding="utf-8")) for path in matches]
+
+
+def load_fault_timings() -> list[dict[str, str]]:
+    path = SUMMARY_DIR / "extended_fault_timings.csv"
+    with path.open(encoding="utf-8") as stream:
+        return list(csv.DictReader(stream))
+
+
+def agg_row(summary: dict[str, Any], config_id: str, model: str) -> dict[str, Any]:
+    """Return the aggregate row (all seeds combined) for one config/model pair."""
+    for row in summary["aggregates"]:
+        if row["config_id"] == config_id and row["model"] == model:
+            return row
+    raise KeyError(f"No aggregate row for config={config_id!r} model={model!r}")
+
+
+def fmt_int(value: int) -> str:
+    return f"{value:,}"
+
+
+def fmt_rate(violations: int, checks: int) -> str:
+    return f"{violations / checks * 100:.2f}%" if checks else "n/a"
 
 
 class ReportDocTemplate(BaseDocTemplate):
@@ -342,17 +436,110 @@ def toc(story, lang, st):
     story.append(PageBreak())
 
 
-def report_content(lang: str, st):
+def load_report_data() -> dict[str, Any]:
+    """Load every summary file the report needs and compute derived figures.
+
+    This is the single place that reads results/summary/*.json and
+    extended_fault_timings.csv. Every number that appears in the report body
+    below is threaded through from here rather than retyped, so rerunning
+    this script after new experiments updates the PDF automatically.
+    """
+    s0 = load_one("baseline-s0-formal-*.summary.json")
+    s1 = load_one("s1-secondary-failure-formal-*.summary.json")
+    s2 = load_one("s2-primary-failure-formal-*.summary.json")
+    s3 = load_one("s3-primary-partition-formal-rerun-*.summary.json")
+    s4 = load_one("s4-secondary-replication-lag-formal-*.summary.json")
+    t1_runs = load_many("t1-primary-stop-transition-formal-rerun-*.summary.json")
+    t2_runs = load_many("t2-primary-partition-transition-formal-rerun-*.summary.json")
+    timings = load_fault_timings()
+
+    def election_ms(scenario_label: str) -> list[float]:
+        return [
+            float(row["value_ms"])
+            for row in timings
+            if row["scenario"] == scenario_label and row["metric"] == "election duration"
+        ]
+
+    def combined_totals(runs: list[dict[str, Any]]) -> dict[str, int]:
+        return {
+            "checks": sum(r["totals"]["check_count"] for r in runs),
+            "violations": sum(r["totals"]["violation_count"] for r in runs),
+            "errors": sum(r["totals"]["error_count"] for r in runs),
+        }
+
+    def phase_totals(runs: list[dict[str, Any]], config_id: str = "C3") -> dict[str, dict[str, int]]:
+        totals = {
+            phase: {"violations": 0, "checks": 0}
+            for phase in ("pre-fault", "election", "post-election")
+        }
+        for run in runs:
+            for row in run["phase_rows"]:
+                if row["config_id"] != config_id:
+                    continue
+                totals[row["phase"]]["violations"] += int(row["violation_count"])
+                totals[row["phase"]]["checks"] += int(row["check_count"])
+        return totals
+
+    lag = {row["metric"]: float(row["value_ms"]) for row in timings if row["scenario"] == "S4 replication lag"}
+
+    return {
+        "s0": s0, "s1": s1, "s2": s2, "s3": s3, "s4": s4,
+        "t1_runs": t1_runs, "t2_runs": t2_runs,
+        "t1_elections": election_ms("T1 Primary stopped"),
+        "t2_elections": election_ms("T2 Primary partitioned"),
+        "t1_totals": combined_totals(t1_runs),
+        "t2_totals": combined_totals(t2_runs),
+        "t1_phase": phase_totals(t1_runs),
+        "t2_phase": phase_totals(t2_runs),
+        "t1_errors_per_seed": [r["totals"]["error_count"] for r in t1_runs],
+        "t2_errors_per_seed": [r["totals"]["error_count"] for r in t2_runs],
+        "s4_lag_end_ms": lag.get("lag at workload end"),
+        "s4_catchup_ms": lag.get("catch-up duration"),
+    }
+
+
+def report_content(lang: str, st, data: dict[str, Any]):
     z = lang == "zh"
     story = []
     cover(story, lang, st)
     toc(story, lang, st)
 
+    s0, s1, s2, s3, s4 = data["s0"], data["s1"], data["s2"], data["s3"], data["s4"]
+    ryw, mr, mw, wfr = "read-your-writes", "monotonic-reads", "monotonic-writes", "writes-follow-reads"
+
+    s0_c3_ryw = agg_row(s0, "C3", ryw)
+    s0_c3_mr = agg_row(s0, "C3", mr)
+    stable_c3_ryw_rates = [
+        agg_row(summary, "C3", ryw)["violation_rate"] * 100 for summary in (s1, s2, s3)
+    ]
+    s4_ryw = agg_row(s4, "C3", ryw)
+    s4_mr = agg_row(s4, "C3", mr)
+    s4_wfr = agg_row(s4, "C3", wfr)
+
+    abstract_zh = (
+        "本项目在单台 Google Cloud 虚拟机中使用 Docker Compose 部署三节点 MongoDB 8.0.29 副本集，并系统研究读关注级别、写关注级别、读偏好与因果一致会话如何影响应用观察到的四项客户端中心一致性保证：读己之写、单调读、单调写和写跟随读。实验由正常运行、Secondary 停机、Primary 停机、Primary 网络分区、选举过渡窗口以及受控复制延迟六类场景组成。正式基线与稳态故障矩阵对每个配置和模型运行 500 个序列及 3 个随机种子；过渡窗口持续 35 秒；复制延迟实验冻结一个可读 Secondary 的应用线程。结果显示，C1、C2 与 C4 在所有成功检查中均未出现一致性违例；弱配置 C3 在正常状态的读己之写违例率为 {s0_ryw_rate}，在 S1-S3 为 {stable_range}。选举窗口产生短暂操作错误，但没有在强配置中引入新的成功读异常。S4 将弱配置的读己之写、单调读和写跟随读违例率分别放大到 {s4_ryw_rate}、{s4_mr_rate} 和 {s4_wfr_rate}，而单调写仍未违例。结果支持 MongoDB 文档对因果一致会话与 majority 读写关注级别的描述，同时说明“未观察到违例”是特定实验负载下的证据，而非对所有执行历史的形式证明。"
+    ).format(
+        s0_ryw_rate=fmt_rate(s0_c3_ryw["violation_count"], s0_c3_ryw["check_count"]),
+        stable_range=f"{min(stable_c3_ryw_rates):.2f}%-{max(stable_c3_ryw_rates):.2f}%",
+        s4_ryw_rate=fmt_rate(s4_ryw["violation_count"], s4_ryw["check_count"]),
+        s4_mr_rate=fmt_rate(s4_mr["violation_count"], s4_mr["check_count"]),
+        s4_wfr_rate=fmt_rate(s4_wfr["violation_count"], s4_wfr["check_count"]),
+    )
+    abstract_en = (
+        "This project deploys a three-member MongoDB 8.0.29 replica set with Docker Compose on one Google Cloud virtual machine and studies how read concern, write concern, read preference, and causally consistent sessions affect four client-centric guarantees: read-your-writes, monotonic reads, monotonic writes, and writes-follow-reads. The experiment suite covers normal operation, a stopped secondary, a stopped primary, a primary-side network partition, continuous requests during elections, and controlled replication lag. Each formal baseline and stable-fault matrix uses 500 sequences and three random seeds for every configuration-model pair; transition tests run for 35 seconds; the lag test freezes apply processing on one readable secondary. C1, C2, and C4 showed no consistency violations in successful checks. Weak configuration C3 produced a {s0_ryw_rate} read-your-writes violation rate in normal operation and {stable_range} under stable faults. Election windows caused transient operation errors but no new successful-read anomaly in the strong configurations. Under S4, C3 violation rates rose to {s4_ryw_rate} for read-your-writes, {s4_mr_rate} for monotonic reads, and {s4_wfr_rate} for writes-follow-reads, while monotonic writes remained intact. These observations support MongoDB's documented causal-consistency behavior, while the absence of observed violations remains experimental evidence rather than a proof over all histories."
+    ).format(
+        s0_ryw_rate=fmt_rate(s0_c3_ryw["violation_count"], s0_c3_ryw["check_count"]),
+        stable_range=f"{min(stable_c3_ryw_rates):.2f}%-{max(stable_c3_ryw_rates):.2f}%",
+        s4_ryw_rate=fmt_rate(s4_ryw["violation_count"], s4_ryw["check_count"]),
+        s4_mr_rate=fmt_rate(s4_mr["violation_count"], s4_mr["check_count"]),
+        s4_wfr_rate=fmt_rate(s4_wfr["violation_count"], s4_wfr["check_count"]),
+    )
+
     section(story, "摘要" if z else "Abstract", st)
     abstract = (
-        "本项目在单台 Google Cloud 虚拟机中使用 Docker Compose 部署三节点 MongoDB 8.0.29 副本集，并系统研究读关注级别、写关注级别、读偏好与因果一致会话如何影响应用观察到的四项客户端中心一致性保证：读己之写、单调读、单调写和写跟随读。实验由正常运行、Secondary 停机、Primary 停机、Primary 网络分区、选举过渡窗口以及受控复制延迟六类场景组成。正式基线与稳态故障矩阵对每个配置和模型运行 500 个序列及 3 个随机种子；过渡窗口持续 35 秒；复制延迟实验冻结一个可读 Secondary 的应用线程。结果显示，C1、C2 与 C4 在所有成功检查中均未出现一致性违例；弱配置 C3 在正常状态的读己之写违例率为 76.07%，在 S1-S3 为 64.60%-69.93%。选举窗口产生短暂操作错误，但没有在强配置中引入新的成功读异常。S4 将弱配置的读己之写、单调读和写跟随读违例率分别放大到 83.33%、49.80% 和 50.00%，而单调写仍未违例。结果支持 MongoDB 文档对因果一致会话与 majority 读写关注级别的描述，同时说明“未观察到违例”是特定实验负载下的证据，而非对所有执行历史的形式证明。"
+        abstract_zh
         if z else
-        "This project deploys a three-member MongoDB 8.0.29 replica set with Docker Compose on one Google Cloud virtual machine and studies how read concern, write concern, read preference, and causally consistent sessions affect four client-centric guarantees: read-your-writes, monotonic reads, monotonic writes, and writes-follow-reads. The experiment suite covers normal operation, a stopped secondary, a stopped primary, a primary-side network partition, continuous requests during elections, and controlled replication lag. Each formal baseline and stable-fault matrix uses 500 sequences and three random seeds for every configuration-model pair; transition tests run for 35 seconds; the lag test freezes apply processing on one readable secondary. C1, C2, and C4 showed no consistency violations in successful checks. Weak configuration C3 produced a 76.07% read-your-writes violation rate in normal operation and 64.60%-69.93% under stable faults. Election windows caused transient operation errors but no new successful-read anomaly in the strong configurations. Under S4, C3 violation rates rose to 83.33% for read-your-writes, 49.80% for monotonic reads, and 50.00% for writes-follow-reads, while monotonic writes remained intact. These observations support MongoDB's documented causal-consistency behavior, while the absence of observed violations remains experimental evidence rather than a proof over all histories."
+        abstract_en
     )
     story.append(p(abstract, st["body"]))
     story.append(p(("关键词：MongoDB；副本集；可调一致性；因果一致性；故障注入；复制延迟" if z else "Keywords: MongoDB; replica sets; tunable consistency; causal consistency; fault injection; replication lag"), st["small"]))
@@ -471,16 +658,54 @@ docker compose run --rm --no-deps runner"""
     # chapter heading do not compete for the final lines of the design page.
     story.append(PageBreak())
 
+    def other_c3_models(summary: dict[str, Any]) -> str:
+        parts = []
+        for label, model in (("MR", mr), ("MW", mw), ("WFR", wfr)):
+            row = agg_row(summary, "C3", model)
+            v, c = row["violation_count"], row["check_count"]
+            parts.append(f"{label} 0" if v == 0 else f"{label} {fmt_int(v)}/{fmt_int(c)} ({fmt_rate(v, c)})")
+        return "; ".join(parts)
+
+    def strong_violations(summary: dict[str, Any]) -> int:
+        return sum(
+            agg_row(summary, cfg, model)["violation_count"]
+            for cfg in ("C1", "C2", "C4")
+            for model in (ryw, mr, mw, wfr)
+        )
+
+    def stable_row(label: str, summary: dict[str, Any]) -> list[str]:
+        row = agg_row(summary, "C3", ryw)
+        return [
+            label,
+            f"{fmt_int(row['violation_count'])} / {fmt_int(row['check_count'])}",
+            fmt_rate(row["violation_count"], row["check_count"]),
+            other_c3_models(summary),
+            fmt_int(strong_violations(summary)),
+        ]
+
+    s0_totals, s1_totals, s2_totals, s3_totals = (
+        s0["totals"], s1["totals"], s2["totals"], s3["totals"]
+    )
+
     section(story, "6. 结果" if z else "6. Results", st)
     section(story, "6.1 S0-S3：稳态矩阵" if z else "6.1 S0-S3: Stable-State Matrix", st, 2)
     story.append(p(
-        "S0 共完成 60,012 次数据库操作、18,012 次一致性检查，错误为 0。S1、S2、S3 各完成 18,012 次检查且数据库操作错误均为 0。C1、C2、C4 在全部场景和四个模型中均为零违例；C3 的稳定异常只出现在 RYW。" if z else
-        "S0 completed 60,012 database operations and 18,012 consistency checks with zero errors. S1, S2, and S3 each completed 18,012 checks with zero database-operation errors. C1, C2, and C4 had zero violations for every model and scenario; the only stable C3 anomaly was RYW.", st["body"]))
-    stable_data = [["场景" if z else "Scenario", "C3 RYW" , "违例率" if z else "Rate", "其他 C3 模型" if z else "Other C3 models", "C1/C2/C4"],
-        ["S0", "1,141 / 1,500", "76.07%", "MR 109/1,500 (7.27%); MW 0; WFR 0", "0"],
-        ["S1", "1,035 / 1,500", "69.00%", "MR 0; MW 0; WFR 0", "0"],
-        ["S2", "969 / 1,500", "64.60%", "MR 0; MW 0; WFR 0", "0"],
-        ["S3", "1,049 / 1,500", "69.93%", "MR 0; MW 0; WFR 0", "0"],
+        (
+            "S0 共完成 {s0_ops} 次数据库操作、{s0_checks} 次一致性检查，错误为 {s0_err}。S1、S2、S3 各完成 {s1_checks}、{s2_checks}、{s3_checks} 次检查，数据库操作错误分别为 {s1_err}、{s2_err}、{s3_err}。C1、C2、C4 在全部场景和四个模型中共有 {strong_total} 次违例；C3 的稳定异常只出现在 RYW。"
+            if z else
+            "S0 completed {s0_ops} database operations and {s0_checks} consistency checks with {s0_err} errors. S1, S2, and S3 completed {s1_checks}, {s2_checks}, and {s3_checks} checks respectively, with {s1_err}, {s2_err}, and {s3_err} database-operation errors. C1, C2, and C4 recorded {strong_total} violations combined across every model and scenario; the only stable C3 anomaly was RYW."
+        ).format(
+            s0_ops=fmt_int(s0_totals["operation_count"]), s0_checks=fmt_int(s0_totals["check_count"]), s0_err=s0_totals["error_count"],
+            s1_checks=fmt_int(s1_totals["check_count"]), s2_checks=fmt_int(s2_totals["check_count"]), s3_checks=fmt_int(s3_totals["check_count"]),
+            s1_err=s1_totals["error_count"], s2_err=s2_totals["error_count"], s3_err=s3_totals["error_count"],
+            strong_total=sum(strong_violations(s) for s in (s0, s1, s2, s3)),
+        ), st["body"]))
+    stable_data = [
+        ["场景" if z else "Scenario", "C3 RYW", "违例率" if z else "Rate", "其他 C3 模型" if z else "Other C3 models", "C1/C2/C4"],
+        stable_row("S0", s0),
+        stable_row("S1", s1),
+        stable_row("S2", s2),
+        stable_row("S3", s3),
     ]
     story.append(make_table(stable_data, [18*mm, 34*mm, 25*mm, 62*mm, 28*mm], st))
     story.append(Spacer(1, 4*mm))
@@ -490,48 +715,90 @@ docker compose run --rm --no-deps runner"""
         "The slightly lower C3 RYW rates in S1-S3 do not mean faults strengthened C3. The number of available replicas, the selected Secondary, and runtime scheduling changed the chance of choosing a stale member. These rates are empirical frequencies in this deployment, not protocol guarantees.", st["body"]))
 
     section(story, "6.2 延迟" if z else "6.2 Latency", st, 2)
-    latency_data = [["配置" if z else "Config", "S0 p50 / p95", "S1 p50 / p95", "S2 p50 / p95", "S3 p50 / p95"],
-        ["C1", "3.19 / 9.24 ms", "2.09 / 5.84", "2.23 / 7.09", "2.05 / 6.07"],
-        ["C2", "3.43 / 9.11 ms", "2.21 / 6.62", "2.84 / 9.73", "2.15 / 7.04"],
-        ["C3", "1.48 / 5.00 ms", "1.01 / 3.35", "1.07 / 3.14", "0.88 / 2.85"],
-        ["C4", "3.22 / 9.13 ms", "2.25 / 6.79", "2.24 / 6.65", "2.17 / 6.45"],
+
+    def latency_row(config: str) -> list[str]:
+        cells = [config]
+        for summary in (s0, s1, s2, s3):
+            lat = agg_row(summary, config, ryw)["latency_ms"]
+            cells.append(f"{lat['p50']:.2f} / {lat['p95']:.2f}")
+        return cells
+
+    latency_data = [
+        ["配置" if z else "Config", "S0 p50 / p95 (ms)", "S1 p50 / p95", "S2 p50 / p95", "S3 p50 / p95"],
+        latency_row("C1"), latency_row("C2"), latency_row("C3"), latency_row("C4"),
     ]
     story.append(make_table(latency_data, [23*mm, 36*mm, 36*mm, 36*mm, 36*mm], st))
+    c1_wfr_p95 = agg_row(s0, "C1", wfr)["latency_ms"]["p95"]
+    c2_wfr_p95 = agg_row(s0, "C2", wfr)["latency_ms"]["p95"]
     story.append(p(
-        "表中为 RYW 单次“写后读”对的端到端延迟。C3 延迟最低，与 w:1/local 不等待多数确认相符；这也是其更弱可见性的代价。C2 的 WFR 基线 p95 为 42.27 ms，高于 C1 的 19.37 ms，显示跨 Secondary 因果读取可能等待满足 afterClusterTime。不同故障场景的较低中位数受容器、缓存和运行时波动影响，不应解释为故障优化。" if z else
-        "The table reports end-to-end latency for one RYW write-read pair. C3 is fastest, consistent with w:1/local avoiding majority waits, but this accompanies weaker visibility. C2's baseline WFR p95 was 42.27 ms versus 19.37 ms for C1, consistent with a causal secondary read sometimes waiting to satisfy afterClusterTime. Lower medians in some fault scenarios reflect container, cache, and runtime variation and should not be interpreted as fault-induced optimization.", st["body"]))
+        (
+            "表中为 RYW 单次“写后读”对的端到端延迟。C3 延迟最低，与 w:1/local 不等待多数确认相符；这也是其更弱可见性的代价。C2 的 WFR 基线 p95 为 {c2:.2f} ms，高于 C1 的 {c1:.2f} ms，显示跨 Secondary 因果读取可能等待满足 afterClusterTime。不同故障场景的较低中位数受容器、缓存和运行时波动影响，不应解释为故障优化。"
+            if z else
+            "The table reports end-to-end latency for one RYW write-read pair. C3 is fastest, consistent with w:1/local avoiding majority waits, but this accompanies weaker visibility. C2's baseline WFR p95 was {c2:.2f} ms versus {c1:.2f} ms for C1, consistent with a causal secondary read sometimes waiting to satisfy afterClusterTime. Lower medians in some fault scenarios reflect container, cache, and runtime variation and should not be interpreted as fault-induced optimization."
+        ).format(c1=c1_wfr_p95, c2=c2_wfr_p95), st["body"]))
 
     section(story, "6.3 T1/T2：选举过渡窗口" if z else "6.3 T1/T2: Election Transition Windows", st, 2)
-    transition_data = [["场景" if z else "Scenario", "检查" if z else "Checks", "违例" if z else "Violations", "操作错误" if z else "Op. errors", "平均选举时间" if z else "Mean election", "强配置成功操作" if z else "Strong successful ops"],
-        ["T1", "9,635", "2,420 (all C3)", "34 (all election)", "11,334 ms", "0 violations"],
-        ["T2", "10,974", "2,532 (all C3)", "60 (all election)", "15,041 ms", "0 violations"],
+    t1_totals, t2_totals = data["t1_totals"], data["t2_totals"]
+    t1_election_mean = mean(data["t1_elections"])
+    t2_election_mean = mean(data["t2_elections"])
+    t1_strong = sum(
+        row["violation_count"] for run in data["t1_runs"] for row in run["aggregates"] if row["config_id"] in ("C1", "C2", "C4")
+    )
+    t2_strong = sum(
+        row["violation_count"] for run in data["t2_runs"] for row in run["aggregates"] if row["config_id"] in ("C1", "C2", "C4")
+    )
+    transition_data = [
+        ["场景" if z else "Scenario", "检查" if z else "Checks", "违例" if z else "Violations", "操作错误" if z else "Op. errors", "平均选举时间" if z else "Mean election", "强配置成功操作" if z else "Strong successful ops"],
+        ["T1", fmt_int(t1_totals["checks"]), f"{fmt_int(t1_totals['violations'])} (all C3)", f"{t1_totals['errors']} (all election)", f"{t1_election_mean:,.0f} ms", f"{t1_strong} violations"],
+        ["T2", fmt_int(t2_totals["checks"]), f"{fmt_int(t2_totals['violations'])} (all C3)", f"{t2_totals['errors']} (all election)", f"{t2_election_mean:,.0f} ms", f"{t2_strong} violations"],
     ]
     story.append(make_table(transition_data, [17*mm, 25*mm, 38*mm, 38*mm, 27*mm, 30*mm], st))
     story.append(Spacer(1, 4*mm))
     story.append(figure(FIG / "02_transition_window_outcomes.png", "图 3. T1/T2 中各配置的成功检查、违例和操作错误。" if z else "Figure 3. Successful checks, violations, and operation errors by configuration in T1/T2.", st))
     story.append(figure(FIG / "03_fault_timing.png", "图 4. S2、S3、T1 与 T2 的选举时间。T1/T2 显示三个随机种子。" if z else "Figure 4. Election timing for S2, S3, T1, and T2. T1/T2 show all three seeds.", st))
-    phase_data = [["场景" if z else "Scenario", "pre", "election", "post"],
-        ["T1 C3", "771/993 = 77.64%", "537/701 = 76.60%", "1,112/1,728 = 64.35%"],
-        ["T2 C3", "849/1,075 = 78.98%", "413/550 = 75.09%", "1,270/2,003 = 63.40%"],
+
+    def phase_cell(totals: dict[str, dict[str, int]], phase: str) -> str:
+        v, c = totals[phase]["violations"], totals[phase]["checks"]
+        return f"{fmt_int(v)}/{fmt_int(c)} = {fmt_rate(v, c)}"
+
+    phase_data = [
+        ["场景" if z else "Scenario", "pre", "election", "post"],
+        ["T1 C3", phase_cell(data["t1_phase"], "pre-fault"), phase_cell(data["t1_phase"], "election"), phase_cell(data["t1_phase"], "post-election")],
+        ["T2 C3", phase_cell(data["t2_phase"], "pre-fault"), phase_cell(data["t2_phase"], "election"), phase_cell(data["t2_phase"], "post-election")],
     ]
     story.append(make_table(phase_data, [28*mm, 46*mm, 46*mm, 47*mm], st))
+    t1_err_range = f"{min(data['t1_errors_per_seed'])}-{max(data['t1_errors_per_seed'])}"
+    t2_err_range = f"{min(data['t2_errors_per_seed'])}-{max(data['t2_errors_per_seed'])}"
     story.append(p(
-        "过渡实验给出两个互补结论。第一，C1、C2、C4 的成功 RYW 对仍然零违例；第二，选举阶段出现 34 与 60 次操作错误，说明强一致设置在无法立即找到可写 Primary 时牺牲了短暂可用性。C3 在故障前已经很弱，其 pre 与 election 违例率接近，因此选举没有创造一种新的 C3 一致性缺陷，主要新增的是暂时失败。" if z else
-        "The transition tests give two complementary conclusions. First, successful RYW pairs under C1, C2, and C4 still had zero violations. Second, 34 and 60 operation errors occurred during elections, showing a temporary availability cost when no writable Primary could be selected immediately. C3 was already weak before each fault, with similar pre and election violation rates; the election did not create a new C3 consistency defect, but mainly added transient failures.", st["body"]))
+        (
+            "过渡实验给出两个互补结论。第一，C1、C2、C4 的成功 RYW 对仍然共 {strong} 次违例；第二，选举阶段出现 {t1_err} 与 {t2_err} 次操作错误，说明强一致设置在无法立即找到可写 Primary 时牺牲了短暂可用性。C3 在故障前已经很弱，其 pre 与 election 违例率接近，因此选举没有创造一种新的 C3 一致性缺陷，主要新增的是暂时失败。三个种子之间的选举期错误数并不稳定（T1：{t1_range} 次；T2：{t2_range} 次），这在单 VM 部署下更可能反映资源调度噪声而非协议行为的差异，报告没有把它当作可复现的定量结果。"
+            if z else
+            "The transition tests give two complementary conclusions. First, successful RYW pairs under C1, C2, and C4 recorded {strong} violations combined. Second, {t1_err} and {t2_err} operation errors occurred during elections, showing a temporary availability cost when no writable Primary could be selected immediately. C3 was already weak before each fault, with similar pre and election violation rates; the election did not create a new C3 consistency defect, but mainly added transient failures. The per-seed election-window error count varied noticeably (T1: {t1_range}; T2: {t2_range}), which on a single shared VM more likely reflects scheduling noise than a real difference in protocol behaviour, so it is reported here rather than treated as a stable quantitative result."
+        ).format(strong=t1_strong + t2_strong, t1_err=t1_totals["errors"], t2_err=t2_totals["errors"], t1_range=t1_err_range, t2_range=t2_err_range), st["body"]))
 
     section(story, "6.4 S4：受控复制延迟" if z else "6.4 S4: Controlled Replication Lag", st, 2)
-    s4_data = [["模型" if z else "Model", "违例 / 检查" if z else "Violations / checks", "违例率" if z else "Rate", "解释" if z else "Interpretation"],
-        ["RYW", "1,250 / 1,500", "83.33%", "写后命中被冻结 Secondary，读到旧版本。" if z else "Post-write read hits the frozen Secondary."],
-        ["MR", "747 / 1,500", "49.80%", "交替访问当前与冻结 Secondary，后读倒退。" if z else "Alternation between current and frozen secondaries."],
-        ["MW", "0 / 3 validations", "0%", "Primary 接收顺序写；最终版本有序。" if z else "Primary accepts ordered writes; final state remains ordered."],
-        ["WFR", "750 / 1,500", "50.00%", "依赖写基于旧 Secondary 的父版本。" if z else "Dependent write is based on a stale parent read."],
+    s4_ryw, s4_mr, s4_mw, s4_wfr = (agg_row(s4, "C3", m) for m in (ryw, mr, mw, wfr))
+    s4_data = [
+        ["模型" if z else "Model", "违例 / 检查" if z else "Violations / checks", "违例率" if z else "Rate", "解释" if z else "Interpretation"],
+        ["RYW", f"{fmt_int(s4_ryw['violation_count'])} / {fmt_int(s4_ryw['check_count'])}", fmt_rate(s4_ryw["violation_count"], s4_ryw["check_count"]), "写后命中被冻结 Secondary，读到旧版本。" if z else "Post-write read hits the frozen Secondary."],
+        ["MR", f"{fmt_int(s4_mr['violation_count'])} / {fmt_int(s4_mr['check_count'])}", fmt_rate(s4_mr["violation_count"], s4_mr["check_count"]), "交替访问当前与冻结 Secondary，后读倒退。" if z else "Alternation between current and frozen secondaries."],
+        ["MW", f"{fmt_int(s4_mw['violation_count'])} / {s4_mw['check_count']} validations", fmt_rate(s4_mw["violation_count"], s4_mw["check_count"]), "Primary 接收顺序写；最终版本有序。" if z else "Primary accepts ordered writes; final state remains ordered."],
+        ["WFR", f"{fmt_int(s4_wfr['violation_count'])} / {fmt_int(s4_wfr['check_count'])}", fmt_rate(s4_wfr["violation_count"], s4_wfr["check_count"]), "依赖写基于旧 Secondary 的父版本。" if z else "Dependent write is based on a stale parent read."],
     ]
     story.append(make_table(s4_data, [23*mm, 39*mm, 25*mm, 80*mm], st))
     story.append(Spacer(1, 4*mm))
     story.append(figure(FIG / "04_s4_model_violation_rates.png", "图 5. S4 中弱配置 C3 的各模型违例率。" if z else "Figure 5. Per-model violation rates for weak configuration C3 under S4.", st))
+    s4_totals = s4["totals"]
     story.append(p(
-        "S4 共 4,503 次检查、0 次数据库操作错误、2,747 次违例（61.00%）。冻结节点在测试结束时落后 38 秒；恢复复制后，连续三次状态检查均在 1 秒内追平，完整恢复过程耗时 27,051 ms。MR 与 WFR 接近 50% 与测试在“冻结/当前”两个 Secondary 之间交替选择相吻合，提供了强机制证据。" if z else
-        "S4 completed 4,503 checks with zero database-operation errors and 2,747 violations (61.00%). The frozen member was 38 seconds behind at test end. After apply resumed, three consecutive status checks each found lag within one second; the full recovery took 27,051 ms. MR and WFR near 50% match alternating selection between one frozen and one current Secondary, providing strong mechanistic evidence.", st["body"]))
+        (
+            "S4 共 {checks} 次检查、{err} 次数据库操作错误、{viol} 次违例（{rate}）。冻结节点在测试结束时落后 {lag:.0f} 秒；恢复复制后，连续三次状态检查均在 1 秒内追平，完整恢复过程耗时 {catchup:,.0f} ms。MR 与 WFR 接近 50% 与测试在“冻结/当前”两个 Secondary 之间交替选择相吻合，提供了强机制证据。"
+            if z else
+            "S4 completed {checks} checks with {err} database-operation errors and {viol} violations ({rate}). The frozen member was {lag:.0f} seconds behind at test end. After apply resumed, three consecutive status checks each found lag within one second; the full recovery took {catchup:,.0f} ms. MR and WFR near 50% match alternating selection between one frozen and one current Secondary, providing strong mechanistic evidence."
+        ).format(
+            checks=fmt_int(s4_totals["check_count"]), err=s4_totals["error_count"], viol=fmt_int(s4_totals["violation_count"]),
+            rate=fmt_rate(s4_totals["violation_count"], s4_totals["check_count"]),
+            lag=(data["s4_lag_end_ms"] or 0) / 1000, catchup=data["s4_catchup_ms"] or 0,
+        ), st["body"]))
 
     section(story, "7. 预测与观察对照" if z else "7. Predictions Versus Observations", st)
     pred_data = [["配置" if z else "Config", "预测" if z else "Prediction", "观察" if z else "Observation", "结论" if z else "Assessment"],
@@ -596,14 +863,18 @@ python3 -m analysis.generate_report_figures"""
         "The repository contains Compose configuration, initialization and fault scripts, Python workloads, formal summary JSON, result narratives, and chart-generation code. Raw JSONL can be regenerated with the commands above. To avoid unintended compute charges, stop the VM in Google Cloud after experiments and verify TERMINATED status; persistent disk may continue to incur storage charges.", st["body"]))
 
     section(story, "9.2 正式运行标识" if z else "9.2 Formal Run Identifiers", st, 2)
+
+    def run_suffix(run_id: str) -> str:
+        return run_id.rsplit("-", 1)[-1]
+
     run_ids = [
-        ["S0", "baseline-s0-formal-20260830T154711Z-3c931c32"],
-        ["S1", "s1-secondary-failure-formal-20260830T181846Z-8e657452"],
-        ["S2", "s2-primary-failure-formal-20260830T182320Z-f604f5eb"],
-        ["S3", "s3-primary-partition-formal-rerun-20260830T183455Z-59f3d378"],
-        ["S4", "s4-secondary-replication-lag-formal-20260831T081523Z-85b1e3b3"],
-        ["T1", "6cad906c; 867b572c; ae94f015"],
-        ["T2", "0609280f; b9f2cd1b; ceb526e5"],
+        ["S0", s0["run_id"]],
+        ["S1", s1["run_id"]],
+        ["S2", s2["run_id"]],
+        ["S3", s3["run_id"]],
+        ["S4", s4["run_id"]],
+        ["T1", "; ".join(run_suffix(r["run_id"]) for r in data["t1_runs"])],
+        ["T2", "; ".join(run_suffix(r["run_id"]) for r in data["t2_runs"])],
     ]
     story.append(make_table([["场景" if z else "Scenario", "Selected formal run ID / suffix"]] + run_ids, [26*mm, 141*mm], st))
 
@@ -638,7 +909,7 @@ python3 -m analysis.generate_report_figures"""
     return story
 
 
-def build(lang: str, filename: str):
+def build(lang: str, filename: str, data: dict[str, Any]):
     st = styles(lang)
     title = (
         "MongoDB 可调一致性与客户端中心一致性实验"
@@ -659,22 +930,25 @@ def build(lang: str, filename: str):
         author="Pan Yuxiang; Hou Jiacheng; Wu Jiarui",
         subject="DSA5208 Project 1 experimental report",
     )
-    doc.multiBuild(report_content(lang, st))
+    doc.multiBuild(report_content(lang, st, data))
     return path
 
 
 def main() -> None:
     register_fonts()
     OUT.mkdir(parents=True, exist_ok=True)
-    USER_OUT.mkdir(parents=True, exist_ok=True)
+    data = load_report_data()
     outputs = [
-        build("zh", "DSA5208_Project1_Report_ZH.pdf"),
-        build("en", "DSA5208_Project1_Report_EN.pdf"),
+        build("zh", "DSA5208_Project1_Report_ZH.pdf", data),
+        build("en", "DSA5208_Project1_Report_EN.pdf", data),
     ]
     for src in outputs:
-        shutil.copy2(src, USER_OUT / src.name)
         print(src)
-        print(USER_OUT / src.name)
+    if USER_OUT is not None:
+        USER_OUT.mkdir(parents=True, exist_ok=True)
+        for src in outputs:
+            shutil.copy2(src, USER_OUT / src.name)
+            print(USER_OUT / src.name)
 
 
 if __name__ == "__main__":

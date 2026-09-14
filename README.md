@@ -237,3 +237,42 @@ Regenerate both editions from the recorded summaries and figures with:
 python3 -m pip install -r report/requirements.txt
 python3 report/generate_reports.py
 ```
+
+Every table and headline statistic in the report is computed from
+`results/summary/*.json` and `results/summary/extended_fault_timings.csv` at
+build time (see `report/generate_reports.py`, `load_report_data()`), so
+rerunning this command after new experiments picks up the new numbers
+automatically instead of requiring a manual edit.
+
+The script needs one CJK-capable TrueType font to render the Chinese PDF. It
+searches common macOS/Linux/Windows locations automatically; if none are
+found, install one (e.g. `sudo apt install fonts-wqy-zenhei` on
+Debian/Ubuntu) or point it at a specific file:
+
+```bash
+REPORT_FONT_PATH=/path/to/font.ttf python3 report/generate_reports.py
+```
+
+To also copy the built PDFs to a personal folder outside the repo, set
+`REPORT_EXTRA_OUTPUT_DIR` (unset by default, so the build never fails or
+writes outside the repo on someone else's machine):
+
+```bash
+REPORT_EXTRA_OUTPUT_DIR=~/Documents/dsa5208-outputs python3 report/generate_reports.py
+```
+
+## Archiving raw results before stopping the VM
+
+`results/raw/*.jsonl` (the individual per-operation logs, roughly 40 MB) is
+intentionally excluded from Git -- see `.gitignore` -- and currently exists
+only on the experiment VM. The committed `results/summary/*.json` files are
+computed from it, but the raw logs themselves are not otherwise backed up.
+Before stopping or deleting the VM, archive them and copy the archive
+somewhere durable:
+
+```bash
+./scripts/archive_raw_results.sh
+```
+
+This writes a timestamped `archives/dsa5208-raw-results-*.tar.gz` containing
+`results/raw/` and `results/summary/`.
