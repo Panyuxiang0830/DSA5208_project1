@@ -9,6 +9,7 @@ scenario="${1:-}"
 iterations="${2:-500}"
 seeds="${3:-20260830,20260831,20260832}"
 label="${4:-formal}"
+configs="${5:-C1,C2,C3,C4}"
 
 case "${scenario}" in
   S1-secondary-failure)
@@ -21,7 +22,7 @@ case "${scenario}" in
     injector=(./scripts/partition_primary.sh)
     ;;
   *)
-    echo "Usage: $0 {S1-secondary-failure|S2-primary-failure|S3-primary-partition} [iterations] [seeds] [label]" >&2
+    echo "Usage: $0 {S1-secondary-failure|S2-primary-failure|S3-primary-partition} [iterations] [seeds] [label] [configs]" >&2
     exit 2
     ;;
 esac
@@ -48,6 +49,7 @@ docker compose run --rm --no-deps \
   -e "EXPERIMENT_SCENARIO=${scenario}" \
   runner python -m experiments.run_baseline \
   --scenario "${scenario}" \
+  --configs "${configs}" \
   --iterations "${iterations}" \
   --seeds "${seeds}" \
   --label "${label}" || status=$?

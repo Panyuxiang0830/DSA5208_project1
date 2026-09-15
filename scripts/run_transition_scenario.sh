@@ -10,6 +10,7 @@ seed="${2:-20260830}"
 label="${3:-pilot}"
 duration_seconds="${4:-25}"
 pre_fault_seconds="${5:-3}"
+configs="${6:-C1,C2,C3,C4}"
 
 case "${scenario}" in
   T1-primary-stop-transition)
@@ -19,7 +20,7 @@ case "${scenario}" in
     injector=(./scripts/partition_primary.sh)
     ;;
   *)
-    echo "Usage: $0 {T1-primary-stop-transition|T2-primary-partition-transition} [seed] [label] [duration_seconds] [pre_fault_seconds]" >&2
+    echo "Usage: $0 {T1-primary-stop-transition|T2-primary-partition-transition} [seed] [label] [duration_seconds] [pre_fault_seconds] [configs]" >&2
     exit 2
     ;;
 esac
@@ -56,6 +57,7 @@ docker compose run --rm --no-deps \
   -e "EXPERIMENT_SCENARIO=${scenario}" \
   runner python -m experiments.transition_window \
   --scenario "${scenario}" \
+  --configs "${configs}" \
   --seed "${seed}" \
   --label "${label}" \
   --duration-seconds "${duration_seconds}" \

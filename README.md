@@ -120,6 +120,24 @@ Machine-readable summaries are written to `results/summary/`. Each operation
 records the effective configuration, logical version, latency, outcome,
 consistency check, and the MongoDB member that served the command when known.
 
+### Controlled non-causal concern matrix
+
+The controlled matrix reuses C3 as its existing `w:1`/`local` corner and adds
+only the three missing non-causal, directed-Secondary corners: C5
+(`w:1`/`majority`), C6 (`majority`/`local`), and C8
+(`majority`/`majority`). C3 is not rerun. On the experiment VM, the resumable
+wrapper below skips any scenario whose uniquely labelled summary already
+exists:
+
+```bash
+./scripts/run_noncausal_concern_matrix.sh
+```
+
+The matrix therefore holds session mode and Secondary-read routing fixed while
+varying only read and write concern. C2 remains a useful causal strong baseline,
+but it is not presented as a strict one-variable ablation because its reads are
+selected by the replica-set driver rather than the directed alternating path.
+
 ## Run the fault scenarios
 
 The fault wrapper first restores a healthy Replica Set, injects one fault,
