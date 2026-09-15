@@ -453,6 +453,18 @@ def load_report_data() -> dict[str, Any]:
     t2_runs = load_many("t2-primary-partition-transition-formal-rerun-*.summary.json")
     timings = load_fault_timings()
 
+    # C5-C8 controlled concern-matrix extension (added after the original
+    # C1-C4 matrix; loaded separately since it was run as its own suite with
+    # its own run IDs, and merged with C1-C4 only where the report needs
+    # both together).
+    s0_ext = load_one("s0-normal-ext-formal-*.summary.json")
+    s1_ext = load_one("s1-secondary-failure-ext-formal-*.summary.json")
+    s2_ext = load_one("s2-primary-failure-ext-formal-*.summary.json")
+    s3_ext = load_one("s3-primary-partition-ext-formal-*.summary.json")
+    s4_ext = load_one("s4-secondary-replication-lag-ext-formal-*.summary.json")
+    t1_ext_runs = load_many("t1-primary-stop-transition-ext-formal-*.summary.json")
+    t2_ext_runs = load_many("t2-primary-partition-transition-ext-formal-*.summary.json")
+
     def election_ms(scenario_label: str) -> list[float]:
         return [
             float(row["value_ms"])
@@ -482,8 +494,20 @@ def load_report_data() -> dict[str, Any]:
 
     lag = {row["metric"]: float(row["value_ms"]) for row in timings if row["scenario"] == "S4 replication lag"}
 
+    def transition_totals_for_config(runs: list[dict[str, Any]], config_id: str) -> dict[str, int]:
+        rows = [agg_row(run, config_id, "read-your-writes-transition") for run in runs]
+        return {
+            "checks": sum(r["check_count"] for r in rows),
+            "violations": sum(r["violation_count"] for r in rows),
+            "errors": sum(r["error_count"] for r in rows),
+        }
+
     return {
         "s0": s0, "s1": s1, "s2": s2, "s3": s3, "s4": s4,
+        "s0_ext": s0_ext, "s1_ext": s1_ext, "s2_ext": s2_ext, "s3_ext": s3_ext, "s4_ext": s4_ext,
+        "t1_ext_runs": t1_ext_runs, "t2_ext_runs": t2_ext_runs,
+        "t1_ext_totals": {c: transition_totals_for_config(t1_ext_runs, c) for c in ("C5", "C6", "C7", "C8")},
+        "t2_ext_totals": {c: transition_totals_for_config(t2_ext_runs, c) for c in ("C5", "C6", "C7", "C8")},
         "t1_runs": t1_runs, "t2_runs": t2_runs,
         "t1_elections": election_ms("T1 Primary stopped"),
         "t2_elections": election_ms("T2 Primary partitioned"),
@@ -800,6 +824,91 @@ docker compose run --rm --no-deps runner"""
             lag=(data["s4_lag_end_ms"] or 0) / 1000, catchup=data["s4_catchup_ms"] or 0,
         ), st["body"]))
 
+    section(story, "6.5 受控关注矩阵与会话消融" if z else "6.5 Controlled Concern Matrix and Session Ablation", st, 2)
+    s0_ext, s1_ext, s2_ext, s3_ext, s4_ext = (
+        data["s0_ext"], data["s1_ext"], data["s2_ext"], data["s3_ext"], data["s4_ext"]
+    )
+    story.append(p(
+        "C1-C4 一次性改变了会话、写关注、读关注与读偏好中的多个变量，其中 C3 的弱表现无法单独归因于任一维度。本节新增四个配置 C5-C8，把读偏好固定为 secondary，构造一个 2x2 的写/读关注矩阵（C2、C5、C6、C7，会话均为因果）并额外加入 C8（会话关闭、其余与 C2 相同），从而分别回答：固定因果会话与 Secondary 读取时，写/读关注各自贡献了什么；以及固定 majority/majority/secondary 时，单独关闭因果会话会改变什么。" if z else
+        "C1-C4 changed session, write concern, read concern, and read preference together, so C3's weak results cannot be attributed to any single dimension. This section adds four configurations, C5-C8, holding read preference at secondary to build a 2x2 write/read-concern matrix (C2, C5, C6, C7, all causal) plus C8 (same as C2 but with the causal session turned off). This isolates two questions: with a causal session and Secondary reads held fixed, what do write concern and read concern each contribute; and with majority/majority/secondary held fixed, what changes when only the causal session is removed.", st["body"]))
+    ext_config_data = [
+        ["配置" if z else "Config", "会话" if z else "Session", "写关注" if z else "Write concern", "读关注" if z else "Read concern", "预测" if z else "Prediction"],
+        ["C2", "因果" if z else "Causal", "majority", "majority", "四项均有持久保证" if z else "All four durably guaranteed"],
+        ["C5", "因果" if z else "Causal", "w: 1", "majority", "MR、WFR 有持久保证；RYW、MW 不保证" if z else "MR, WFR durably guaranteed; RYW, MW not"],
+        ["C6", "因果" if z else "Causal", "majority", "local", "MW 有保证；RYW、MR、WFR 不保证" if z else "MW guaranteed; RYW, MR, WFR not"],
+        ["C7", "因果" if z else "Causal", "w: 1", "local", "四项均不保证" if z else "None of the four guaranteed"],
+        ["C8", "无因果" if z else "Non-causal", "majority", "majority", "四项均无通用会话保证；本负载 MW 可能仍成立" if z else "No general session guarantee for any; MW may still hold in this workload"],
+    ]
+    story.append(make_table(ext_config_data, [13*mm, 22*mm, 26*mm, 26*mm, 84*mm], st))
+    story.append(Spacer(1, 3*mm))
+
+    s0_c8_ryw = agg_row(s0_ext, "C8", ryw)
+    s1_c8_ryw = agg_row(s1_ext, "C8", ryw)
+    story.append(p(
+        (
+            "S0-S3 下 C5、C6、C7 在四个模型上均为零违例（附录表未单独列出），说明本负载下单靠因果会话与健康的 Secondary 拓扑，即使写/读关注很弱，也足以避免可观测的违例——这与预测不完全一致：预测认为 C7（w:1、local）四项均不保证，但零故障、零人为延迟时并没有暴露出这一点，说明“未观察到违例”仍是负载相关的经验证据而非会话强度的证明。C8 是例外：即使在没有任何故障注入的 S0 正常运行下，它就已经出现 {s0_rate} 的 RYW 违例（{s0_v}/{s0_c}），S1 稳定故障下降到 {s1_rate}（{s1_v}/{s1_c}）。这直接支持第二个问题的答案：仅仅使用 majority 写关注和 majority 读关注，如果没有因果会话，并不能保证 RYW——多数确认只保证耐久性，不保证客户端接下来选中的 Secondary 已经应用了它自己的写入。" if z else
+            "Across S0-S3, C5, C6, and C7 recorded zero violations on every model (not tabulated separately) -- with a healthy topology and a causal session, even weak write/read concern avoided observable violations in this workload. This only partly matches the prediction: C7 (w:1, local) was predicted to guarantee none of the four, yet no violation surfaced without a fault or artificial lag, underscoring that 'no observed violation' remains workload-dependent evidence, not proof of session strength. C8 is the exception: even under fault-free S0 it already showed a {s0_rate} read-your-writes violation rate ({s0_v}/{s0_c}), falling to {s1_rate} under the stable S1 fault ({s1_v}/{s1_c}). This directly answers the second question: majority write concern plus majority read concern alone, without a causal session, does not guarantee read-your-writes -- majority only guarantees durability, not that the Secondary the client's next read happens to land on has already applied that write."
+        ).format(
+            s0_rate=fmt_rate(s0_c8_ryw["violation_count"], s0_c8_ryw["check_count"]),
+            s0_v=fmt_int(s0_c8_ryw["violation_count"]), s0_c=fmt_int(s0_c8_ryw["check_count"]),
+            s1_rate=fmt_rate(s1_c8_ryw["violation_count"], s1_c8_ryw["check_count"]),
+            s1_v=fmt_int(s1_c8_ryw["violation_count"]), s1_c=fmt_int(s1_c8_ryw["check_count"]),
+        ), st["body"]))
+
+    story.append(figure(
+        FIG / "05_extended_concern_matrix.png",
+        "图 6. C2、C5-C8 在 S0-S4 下的违例率矩阵；S4 中所有配置读取同一个被暂停应用 oplog 的 Secondary。" if z else
+        "Figure 6. Violation-rate matrix for C2, C5-C8 across S0-S4; under S4 every configuration reads the same Secondary with paused oplog application.",
+        st,
+    ))
+    story.append(Spacer(1, 4*mm))
+
+    def ext_row(cfg: str) -> list[str]:
+        cells = [cfg]
+        for model in (ryw, mr, mw, wfr):
+            row = agg_row(s4_ext, cfg, model)
+            v, c, e = row["violation_count"], row["check_count"], row["error_count"]
+            total = c + e
+            cells.append(f"{fmt_rate(v, c)} / err {e/total*100:.0f}%" if total else "n/a")
+        return cells
+
+    s4_matrix_data = [
+        ["配置" if z else "Config", "RYW 违例率/错误率" if z else "RYW rate/err", "MR", "MW", "WFR"],
+        ext_row("C2"), ext_row("C5"), ext_row("C6"), ext_row("C7"), ext_row("C8"),
+    ]
+    story.append(make_table(s4_matrix_data, [16*mm, 40*mm, 40*mm, 30*mm, 40*mm], st))
+    story.append(Spacer(1, 4*mm))
+    story.append(figure(
+        FIG / "06_session_ablation_c2_vs_c8.png",
+        "图 7. C2 与 C8 在 S4 下的对照：写/读关注与读偏好相同，唯一差异是因果会话。" if z else
+        "Figure 7. C2 versus C8 under S4: identical write/read concern and read preference, differing only in the causal session.",
+        st,
+    ))
+    story.append(Spacer(1, 4*mm))
+
+    c2_wfr = agg_row(s4_ext, "C2", wfr)
+    c8_wfr = agg_row(s4_ext, "C8", wfr)
+    story.append(p(
+        (
+            "S4 把读偏好固定为 Secondary，并让全部六个配置读取同一个被 rsSyncApplyStop 暂停的节点，因此矩阵中的差异只能来自会话与关注设置。结果清楚回答了第一个问题：只要因果会话开启（C2、C5、C6、C7），RYW/MR/WFR 的违例率都是 0%——但操作错误率从约 33% 升到约 51% 不等，说明因果读在无法满足 afterClusterTime 时选择等待并超时，而不是返回旧版本；写/读关注在这四个配置之间的差异主要体现在错误率的高低和 6.1-6.4 节测得的延迟上，而不是体现在是否违反四项保证上。第二个问题由 C2 与 C8 的直接对照回答：两者写/读关注、读偏好完全相同，仅会话不同，但 C8 的 WFR 违例率是 {c8_wfr_rate}（对比 C2 的 {c2_wfr_rate}，其操作错误率反而是 {c2_wfr_err:.0f}%）。也就是说，因果会话把“成功但读到旧值”变成了“操作失败”，这是一种可观测、可归因的机制差异，而不是同一现象的两种描述。" if z else
+            "S4 holds read preference at Secondary and routes all six configurations to the same node paused with rsSyncApplyStop, so differences in the matrix can only come from session and concern settings. The results answer the first question cleanly: with a causal session on (C2, C5, C6, C7), RYW/MR/WFR violation rates are all 0% -- but operation-error rates range roughly from 33% to 51%, showing that a causal read that cannot satisfy afterClusterTime waits and times out rather than returning a stale version; write/read concern differences among these four configs show up mainly in error-rate magnitude and in the latencies measured in 6.1-6.4, not in whether the four guarantees are violated. The second question is answered directly by C2 versus C8: identical write/read concern and read preference, differing only in session, yet C8's WFR violation rate is {c8_wfr_rate} (versus C2's {c2_wfr_rate}, whose operation-error rate is {c2_wfr_err:.0f}% instead). The causal session converts 'succeeded but read a stale value' into 'the operation failed' -- an observable, attributable mechanism difference, not two descriptions of the same outcome."
+        ).format(
+            c8_wfr_rate=fmt_rate(c8_wfr["violation_count"], c8_wfr["check_count"]),
+            c2_wfr_rate=fmt_rate(c2_wfr["violation_count"], c2_wfr["check_count"]),
+            c2_wfr_err=c2_wfr["error_count"] / (c2_wfr["check_count"] + c2_wfr["error_count"]) * 100,
+        ), st["body"]))
+
+    t1_ext, t2_ext = data["t1_ext_totals"], data["t2_ext_totals"]
+    ext_transition_parts = []
+    for cfg in ("C5", "C6", "C7", "C8"):
+        t1v, t2v = t1_ext[cfg]["violations"], t2_ext[cfg]["violations"]
+        ext_transition_parts.append(f"{cfg} T1 {t1v}, T2 {t2v}")
+    story.append(p(
+        (
+            "过渡窗口 T1/T2（每场景 3 个种子，C5-C8 各自持续发送 RYW 写后读）中的违例次数为：{parts}。C5-C7（因果）与 C1/C2/C4 的模式一致，成功历史中未见违例；C8（无因果）出现了个位数的零星违例，量级上与 S0/S1 的正常运行结果相当，说明选举过渡本身并没有为 C8 带来新的失效模式，只是延续了它在无故障时已经存在的弱点。" if z else
+            "Violation counts in the T1/T2 transition windows (3 seeds each, C5-C8 continuously sending RYW write-then-read pairs) were: {parts}. C5-C7 (causal) match the C1/C2/C4 pattern of no violations in successful histories; C8 (non-causal) showed a handful of scattered violations, on the same order as its S0/S1 normal-operation results -- the election transition itself did not introduce a new failure mode for C8, it simply continued the weakness C8 already has without any fault."
+        ).format(parts="; ".join(ext_transition_parts)), st["body"]))
+
     section(story, "7. 预测与观察对照" if z else "7. Predictions Versus Observations", st)
     pred_data = [["配置" if z else "Config", "预测" if z else "Prediction", "观察" if z else "Observation", "结论" if z else "Assessment"],
         ["C1", "四项成立" if z else "All four hold", "所有 S0-S3 检查与 T1/T2 成功 RYW 均零违例" if z else "Zero violations in S0-S3 and successful T1/T2 RYW", "一致" if z else "Agrees"],
@@ -822,6 +931,8 @@ docker compose run --rm --no-deps runner"""
         "阶段以操作开始时间分类；跨越选举边界的单次操作仍只属于一个阶段。",
         "MW 运行了每个配置每种子 500 次顺序写，但汇总中的主要判定分母是每种子的最终历史验证，因此表中显示 3 次验证。",
         "云账单存在报告延迟。实验结束时 VM 已停止；控制台显示本月总成本 0.14 美元、抵扣 0.14 美元、净成本 0，50 美元额度剩余 49.64 美元（约 99%）。",
+        "C5-C8 的正式数据在一台本地 macOS 工作站（Docker Desktop 内的虚拟化 Linux）上采集，而不是采集 C1-C4 数据的 GCP 虚拟机；两套环境的容器间网络与磁盘特性不同，因此 6.5 节内部（C2、C5-C8 互相对照）的比较是可靠的，但把 C5-C8 的绝对数值与 6.1-6.4 节 C1-C4 的绝对数值跨环境直接比较应谨慎，尤其是对延迟敏感的检查（如 RYW）。",
+        "S4 中因果配置的 max_time_ms 设为 300 ms，只用于把“客户端等待多久才判定失败”限制在可承受范围内，防止 500x3 的正式规模测试挂起；这个数值不是对因果一致性真实等待时间的测量，重点是操作是否超时，而不是超时前等待了多久。",
     ] if z else [
         "All members share one VM, hardware, disk, and underlying network; container isolation is not equivalent to three physical or virtual hosts.",
         "S1-S3 run the full matrix after election completion. T1/T2 cover only RYW continuously during the transition; the other three models were not stressed through elections.",
@@ -831,6 +942,8 @@ docker compose run --rm --no-deps runner"""
         "Phases are assigned by operation start time; an operation crossing an election boundary still belongs to one phase.",
         "MW performs 500 sequential writes per configuration and seed, but the summary denominator counts one final history validation per seed; therefore the table reports three validations.",
         "Cloud billing has reporting lag. The VM was stopped after experimentation. The console showed USD 0.14 gross month cost, USD 0.14 credits, zero net cost, and USD 49.64 of the USD 50 credit remaining (about 99%).",
+        "The formal C5-C8 data was collected on a local macOS workstation (a virtualized Linux VM inside Docker Desktop), not the GCP VM used for C1-C4. Container networking and disk characteristics differ between the two environments, so comparisons within 6.5 (C2 and C5-C8 against each other) are reliable, but comparing C5-C8's absolute numbers directly against C1-C4's in 6.1-6.4 across environments should be done cautiously, especially for latency-sensitive checks such as RYW.",
+        "max_time_ms for causal configurations under S4 is set to 300 ms purely to bound how long the client waits before declaring failure, keeping the 500x3 formal run tractable; it is not a measurement of causal consistency's real wait time. The relevant signal is whether the operation times out, not how long it waited before doing so.",
     ]
     for item in limits:
         story.append(bullet(item, st["bullet"]))
@@ -849,9 +962,18 @@ docker compose run --rm --no-deps runner python -m experiments.run_baseline \\
 ./scripts/run_transition_scenario.sh T1-primary-stop-transition 20260830 formal 35 3
 ./scripts/run_transition_scenario.sh T2-primary-partition-transition 20260830 formal 35 3
 
-# Controlled replication lag
+# Controlled replication lag (default configs: C2,C3,C5,C6,C7,C8)
 ./scripts/run_replication_lag_scenario.sh 500 \\
   20260830,20260831,20260832 formal
+
+# C5-C8 controlled concern-matrix extension (6.5): same commands, restricted
+# to the new configs via --configs (run_fault_scenario.sh and
+# run_replication_lag_scenario.sh take it as a trailing positional argument;
+# transition_window.py, invoked by run_transition_scenario.sh, takes it as
+# a flag and otherwise defaults to every config in experiments.common.CONFIGS).
+docker compose run --rm --no-deps runner python -m experiments.run_baseline \\
+  --configs C5,C6,C7,C8 --iterations 500 \\
+  --seeds 20260830,20260831,20260832 --label formal
 
 # Recovery and report figures
 ./scripts/restore_cluster.sh
@@ -875,6 +997,13 @@ python3 -m analysis.generate_report_figures"""
         ["S4", s4["run_id"]],
         ["T1", "; ".join(run_suffix(r["run_id"]) for r in data["t1_runs"])],
         ["T2", "; ".join(run_suffix(r["run_id"]) for r in data["t2_runs"])],
+        ["S0 (C5-C8)", s0_ext["run_id"]],
+        ["S1 (C5-C8)", s1_ext["run_id"]],
+        ["S2 (C5-C8)", s2_ext["run_id"]],
+        ["S3 (C5-C8)", s3_ext["run_id"]],
+        ["S4 (C2,C3,C5-C8)", s4_ext["run_id"]],
+        ["T1 (C5-C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t1_ext_runs"])],
+        ["T2 (C5-C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t2_ext_runs"])],
     ]
     story.append(make_table([["场景" if z else "Scenario", "Selected formal run ID / suffix"]] + run_ids, [26*mm, 141*mm], st))
 

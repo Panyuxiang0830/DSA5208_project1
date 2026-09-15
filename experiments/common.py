@@ -70,7 +70,51 @@ CONFIGS: dict[str, ExperimentConfig] = {
         read_concern="majority",
         read_preference="primary",
     ),
+    # C5-C8: controlled 2x2 read/write-concern matrix, causal session and
+    # secondary read preference held fixed (except C8, which flips causal
+    # off to isolate the session's own contribution). Compare against C2,
+    # which is the majority/majority corner of the same matrix.
+    "C5": ExperimentConfig(
+        config_id="C5",
+        label="causal-w1-majority-secondary",
+        causal_session=True,
+        write_concern=1,
+        read_concern="majority",
+        read_preference="secondary",
+    ),
+    "C6": ExperimentConfig(
+        config_id="C6",
+        label="causal-majority-local-secondary",
+        causal_session=True,
+        write_concern="majority",
+        read_concern="local",
+        read_preference="secondary",
+    ),
+    "C7": ExperimentConfig(
+        config_id="C7",
+        label="causal-w1-local-secondary",
+        causal_session=True,
+        write_concern=1,
+        read_concern="local",
+        read_preference="secondary",
+    ),
+    "C8": ExperimentConfig(
+        config_id="C8",
+        label="noncausal-majority-majority-secondary",
+        causal_session=False,
+        write_concern="majority",
+        read_concern="majority",
+        read_preference="secondary",
+    ),
 }
+
+# C1-C4: the original representative-configuration experiment matrix.
+CORE_CONFIGS: tuple[str, ...] = ("C1", "C2", "C3", "C4")
+# C5-C8: controlled concern-matrix / causal-session-ablation extension.
+# See CONFIGS above and report/generate_reports.py for the 2x2 matrix
+# (C2, C5, C6, C7) and the session ablation pair (C2, C8).
+EXTENDED_CONFIGS: tuple[str, ...] = ("C5", "C6", "C7", "C8")
+ALL_CONFIGS: tuple[str, ...] = CORE_CONFIGS + EXTENDED_CONFIGS
 
 
 READ_PREFERENCES = {
@@ -178,12 +222,17 @@ def validation_collection(client: MongoClient, collection_name: str):
     return database.get_collection(collection_name)
 
 
+TARGET_SECONDARY_ENV = "EXPERIMENT_TARGET_SECONDARY"
+
+
 def direct_secondary_collections(
     client: MongoClient,
     listener: OperationServerListener,
     config: ExperimentConfig,
     collection_name: str,
 ) -> tuple[list[MongoClient], list[Any]]:
+    """Open direct connections to every reachable Secondary, for callers that
+    alternate reads across all of them (C3, and C8 under S4)."""
     hello = client.admin.command("hello")
     primary = hello.get("primary")
     candidate_hosts = sorted(host for host in hello.get("hosts", []) if host != primary)
@@ -221,6 +270,72 @@ def direct_secondary_collections(
         )
 
     return direct_clients, collections
+
+
+def resolve_read_collections(
+    client: MongoClient,
+    listener: OperationServerListener,
+    config: ExperimentConfig,
+    collection_name: str,
+    default_collection: Any,
+) -> tuple[list[MongoClient], list[Any]]:
+    """Decide which collection object(s) a model's reads should cycle through.
+
+    - read_preference == "primary" (C1, C4): always the normally configured,
+      Primary-routed collection; Secondary targeting is meaningless here.
+    - config.directed_secondary_reads (C3), or any other non-causal config
+      (currently C8 only) once EXPERIMENT_TARGET_SECONDARY is set (S4
+      controlled-matrix runs): direct connections to every reachable
+      Secondary, alternated by the caller. This deliberately does NOT narrow
+      to just the paused member -- with only two Secondaries in this
+      deployment, alternating over both already guarantees every config
+      exercises the same lagging node on the same schedule, and pinning
+      exclusively to it produces a degenerate result for monotonic-reads (a
+      read that always lands on a node which never even replicates this
+      run's freshly created document returns "not found" every time, which
+      trivially satisfies "never went backward"). C3's already-published
+      results use this same unfiltered alternation, so C8 now matches it
+      exactly instead of introducing a second, inconsistent mechanism.
+    - causal-session configs (C2, C5, C6, C7) are NEVER routed through a
+      direct connection: PyMongo forbids using a session with any
+      MongoClient other than the one that created it, so a session-bound
+      read cannot be pinned to an ad hoc direct client. These configs always
+      go through the normally configured, driver-routed collection instead,
+      which lets the driver's own server selection sometimes land on the
+      paused Secondary -- and for a causal session that is the scenario we
+      actually want to observe (afterClusterTime makes the server wait
+      rather than return a stale value; see read_max_time_ms()).
+    """
+    if config.read_preference == "primary":
+        return [], [default_collection]
+    if config.directed_secondary_reads:
+        return direct_secondary_collections(client, listener, config, collection_name)
+    if os.environ.get(TARGET_SECONDARY_ENV) and not config.causal_session:
+        return direct_secondary_collections(client, listener, config, collection_name)
+    return [], [default_collection]
+
+
+def read_max_time_ms(config: ExperimentConfig) -> int | None:
+    """Server-side time limit (ms) for a model's per-iteration reads.
+
+    Only causal-session configs need this, and only during S4: a causal read
+    (afterClusterTime) that lands on the Secondary whose oplog application is
+    paused will not return a stale value -- it blocks on the server until
+    that node catches up, which under S4 never happens before the failpoint
+    is disabled at scenario cleanup. Without a bound, one unlucky server
+    selection would hang the whole run instead of surfacing as an operation
+    error. Non-causal configs (C1, C3, C4, C8) never wait on afterClusterTime
+    and do not need this. 300ms is deliberately short: the interesting signal
+    is *whether* the operation errors out instead of returning a stale value,
+    not how long it waits before doing so, and a short bound keeps a 500x3
+    formal run tractable (a healthy Secondary that already satisfies
+    afterClusterTime answers in low single-digit milliseconds either way).
+    """
+    if not config.causal_session:
+        return None
+    if not os.environ.get(TARGET_SECONDARY_ENV):
+        return None
+    return 300
 
 
 @contextlib.contextmanager

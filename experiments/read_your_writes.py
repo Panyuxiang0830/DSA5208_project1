@@ -8,11 +8,12 @@ from .common import (
     JsonlRecorder,
     OperationServerListener,
     configured_collection,
-    direct_secondary_collections,
     error_details,
     logical_session,
     new_operation_id,
     operation_event,
+    read_max_time_ms,
+    resolve_read_collections,
     validation_collection,
 )
 
@@ -36,12 +37,10 @@ def run(
     key = f"{run_id}:{config.config_id}:{seed}"
     validator.replace_one({"_id": key}, {"_id": key, "version": 0}, upsert=True)
 
-    direct_clients: list[Any] = []
-    read_collections = [collection]
-    if config.directed_secondary_reads:
-        direct_clients, read_collections = direct_secondary_collections(
-            client, listener, config, collection_name
-        )
+    direct_clients, read_collections = resolve_read_collections(
+        client, listener, config, collection_name, collection
+    )
+    max_time_ms = read_max_time_ms(config)
 
     violations = 0
     errors = 0
@@ -108,7 +107,10 @@ def run(
                 try:
                     read_collection = read_collections[(iteration - 1) % len(read_collections)]
                     document = read_collection.find_one(
-                        {"_id": key}, session=session, comment=read_id
+                        {"_id": key},
+                        session=session,
+                        comment=read_id,
+                        max_time_ms=max_time_ms,
                     )
                     ended = time.monotonic_ns()
                     observed = document.get("version", -1) if document else -1

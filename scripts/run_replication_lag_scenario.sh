@@ -10,6 +10,7 @@ source "${PROJECT_ROOT}/scripts/lib/cluster_control.sh"
 iterations="${1:-500}"
 seeds="${2:-20260830,20260831,20260832}"
 label="${3:-formal}"
+configs="${4:-C2,C3,C5,C6,C7,C8}"
 scenario="S4-secondary-replication-lag"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 event_log="results/raw/s4-secondary-replication-lag-${label}-${timestamp}-fault-events.jsonl"
@@ -43,9 +44,10 @@ trap cleanup EXIT INT TERM
 status=0
 docker compose run --rm --no-deps \
   -e "EXPERIMENT_SCENARIO=${scenario}" \
+  -e "EXPERIMENT_TARGET_SECONDARY=${lagged_target}" \
   runner python -m experiments.run_baseline \
   --scenario "${scenario}" \
-  --configs C3 \
+  --configs "${configs}" \
   --iterations "${iterations}" \
   --seeds "${seeds}" \
   --label "${label}" || status=$?
