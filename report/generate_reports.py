@@ -839,8 +839,8 @@ docker compose run --rm --no-deps runner"""
     c8_s4_ryw = matrix_agg(s4, s4_matrix, "C8", ryw)
     story.append(p(
         (
-            "S4 的 RYW 违例率依次为 C3 {c3}、C5 {c5}、C6 {c6}、C8 {c8}。C3→C5 与 C6→C8 分别隔离把 read concern 从 local 提升为 majority 的效果；C3→C6 与 C5→C8 则隔离把 write concern 从 w:1 提升为 majority 的效果。无论差异大小，解释边界相同：majority 写关注解决确认耐久性，majority 读关注限制可见数据，但在无因果会话且读取落后 Secondary 时，两者单独或组合都不是 RYW/MR/WFR 的通用保证。" if z else
-            "Under S4, RYW violation rates were C3 {c3}, C5 {c5}, C6 {c6}, and C8 {c8}. C3→C5 and C6→C8 isolate raising read concern from local to majority; C3→C6 and C5→C8 isolate raising write concern from w:1 to majority. Whatever the measured magnitude, the interpretation boundary is the same: majority write concern addresses acknowledged durability and majority read concern restricts visibility, but without a causal session neither alone nor together is a general RYW/MR/WFR guarantee when reads can reach a lagging Secondary."
+            "S4 的 RYW 违例率依次为 C3 {c3}、C5 {c5}、C6 {c6}、C8 {c8}。C3→C5 与 C6→C8 分别隔离把 read concern 从 local 提升为 majority 的效果；C3→C6 与 C5→C8 则隔离把 write concern 从 w:1 提升为 majority 的效果。无论差异大小，解释边界相同：majority 写关注解决确认耐久性，majority 读关注限制可见数据，但在无因果会话且读取落后 Secondary 时，两者单独或组合都不是 RYW/MR/WFR 的通用保证。C5 高于 C3 的机制是：w:1 可在新写进入 majority commit point 前返回，而无因果会话的 Secondary majority read 从可能落后于本地已应用状态的多数提交视图取数，因此紧随写入的读取通常看到旧版本。" if z else
+            "Under S4, RYW violation rates were C3 {c3}, C5 {c5}, C6 {c6}, and C8 {c8}. C3→C5 and C6→C8 isolate raising read concern from local to majority; C3→C6 and C5→C8 isolate raising write concern from w:1 to majority. Whatever the measured magnitude, the interpretation boundary is the same: majority write concern addresses acknowledged durability and majority read concern restricts visibility, but without a causal session neither alone nor together is a general RYW/MR/WFR guarantee when reads can reach a lagging Secondary. C5 exceeds C3 because w:1 can return before the new write advances the majority commit point, while a non-causal majority read on a Secondary uses a majority-committed view that can lag its locally applied state, so the immediate read usually observes an older version."
         ).format(
             c3=fmt_rate(c3_s4_ryw["violation_count"], c3_s4_ryw["check_count"]),
             c5=fmt_rate(c5_s4_ryw["violation_count"], c5_s4_ryw["check_count"]),
@@ -889,7 +889,7 @@ docker compose run --rm --no-deps runner"""
     story.append(make_table(transition_data, [17*mm, 25*mm, 38*mm, 38*mm, 27*mm, 30*mm], st))
     story.append(Spacer(1, 4*mm))
     story.append(figure(FIG / "02_transition_window_outcomes.png", "图 4. T1/T2 中各配置的成功检查、违例和操作错误。" if z else "Figure 4. Successful checks, violations, and operation errors by configuration in T1/T2.", st))
-    story.append(figure(FIG / "03_fault_timing.png", "图 5. S2、S3、T1 与 T2 的选举时间。T1/T2 显示三个随机种子。" if z else "Figure 5. Election timing for S2, S3, T1, and T2. T1/T2 show all three seeds.", st))
+    story.append(figure(FIG / "03_fault_timing.png", "图 5. T1/T2 的 Primary 替换选举时间（每个场景三个随机种子），以及 S4 的复制滞后与恢复追赶时间。" if z else "Figure 5. Primary-replacement election durations for T1/T2 (three seeds per scenario), together with S4 replication-lag and catch-up durations.", st))
 
     def phase_cell(totals: dict[str, dict[str, int]], phase: str) -> str:
         v, c = totals[phase]["violations"], totals[phase]["checks"]
