@@ -416,9 +416,9 @@ def cover(story, lang: str, st):
     story.append(p(meta, st["meta"]))
     story.append(Spacer(1, 20 * mm))
     claim = (
-        "核心结论：因果会话配合 majority 读写在成功操作中保持了四项保证；<br/>无因果会话的 w:1 + local + Secondary 读取在受控复制延迟下暴露了全部三类读因果异常。"
+        "核心结论：因果会话配合 majority 读写在成功操作中保持了四项保证；<br/>关闭因果会话后，即使 majority/majority 也会在受控复制延迟下成功返回旧值。"
         if lang == "zh"
-        else "Main finding: causal sessions with majority reads and writes preserved all four guarantees for successful operations; weak reads exposed all three read-related anomalies under controlled replication lag."
+        else "Main finding: causal sessions with majority reads and writes preserved all four guarantees for successful operations; without a causal session, even majority/majority returned successful stale reads under controlled replication lag."
     )
     append_callout(story, claim, st)
     story.append(p("Repository: github.com/Panyuxiang0830/DSA5208_project1", st["small"]))
@@ -453,17 +453,20 @@ def load_report_data() -> dict[str, Any]:
     t2_runs = load_many("t2-primary-partition-transition-formal-rerun-*.summary.json")
     timings = load_fault_timings()
 
-    # C5-C8 controlled concern-matrix extension (added after the original
-    # C1-C4 matrix; loaded separately since it was run as its own suite with
-    # its own run IDs, and merged with C1-C4 only where the report needs
-    # both together).
-    s0_ext = load_one("s0-normal-ext-formal-*.summary.json")
-    s1_ext = load_one("s1-secondary-failure-ext-formal-*.summary.json")
-    s2_ext = load_one("s2-primary-failure-ext-formal-*.summary.json")
-    s3_ext = load_one("s3-primary-partition-ext-formal-*.summary.json")
-    s4_ext = load_one("s4-secondary-replication-lag-ext-formal-*.summary.json")
-    t1_ext_runs = load_many("t1-primary-stop-transition-ext-formal-*.summary.json")
-    t2_ext_runs = load_many("t2-primary-partition-transition-ext-formal-*.summary.json")
+    # Controlled non-causal concern matrix. C3 already supplies the w:1/local
+    # corner from the original GCP run, so the follow-up suite deliberately
+    # executes only the three missing corners C5/C6/C8 on the same VM.
+    s0_matrix = load_one("s0-normal-noncausal-remote-v2-????????T??????Z-*.summary.json")
+    s1_matrix = load_one("s1-secondary-failure-noncausal-remote-v2-????????T??????Z-*.summary.json")
+    s2_matrix = load_one("s2-primary-failure-noncausal-remote-v2-????????T??????Z-*.summary.json")
+    s3_matrix = load_one("s3-primary-partition-noncausal-remote-v2-????????T??????Z-*.summary.json")
+    s4_matrix = load_one("s4-secondary-replication-lag-noncausal-remote-v2-????????T??????Z-*.summary.json")
+    t1_matrix_runs = load_many(
+        "t1-primary-stop-transition-noncausal-remote-v2-seed-*-????????T??????Z-*.summary.json"
+    )
+    t2_matrix_runs = load_many(
+        "t2-primary-partition-transition-noncausal-remote-v2-seed-*-????????T??????Z-*.summary.json"
+    )
 
     def election_ms(scenario_label: str) -> list[float]:
         return [
@@ -504,10 +507,15 @@ def load_report_data() -> dict[str, Any]:
 
     return {
         "s0": s0, "s1": s1, "s2": s2, "s3": s3, "s4": s4,
-        "s0_ext": s0_ext, "s1_ext": s1_ext, "s2_ext": s2_ext, "s3_ext": s3_ext, "s4_ext": s4_ext,
-        "t1_ext_runs": t1_ext_runs, "t2_ext_runs": t2_ext_runs,
-        "t1_ext_totals": {c: transition_totals_for_config(t1_ext_runs, c) for c in ("C5", "C6", "C7", "C8")},
-        "t2_ext_totals": {c: transition_totals_for_config(t2_ext_runs, c) for c in ("C5", "C6", "C7", "C8")},
+        "s0_matrix": s0_matrix, "s1_matrix": s1_matrix, "s2_matrix": s2_matrix,
+        "s3_matrix": s3_matrix, "s4_matrix": s4_matrix,
+        "t1_matrix_runs": t1_matrix_runs, "t2_matrix_runs": t2_matrix_runs,
+        "t1_matrix_totals": {
+            c: transition_totals_for_config(t1_matrix_runs, c) for c in ("C5", "C6", "C8")
+        },
+        "t2_matrix_totals": {
+            c: transition_totals_for_config(t2_matrix_runs, c) for c in ("C5", "C6", "C8")
+        },
         "t1_runs": t1_runs, "t2_runs": t2_runs,
         "t1_elections": election_ms("T1 Primary stopped"),
         "t2_elections": election_ms("T2 Primary partitioned"),
@@ -529,7 +537,21 @@ def report_content(lang: str, st, data: dict[str, Any]):
     toc(story, lang, st)
 
     s0, s1, s2, s3, s4 = data["s0"], data["s1"], data["s2"], data["s3"], data["s4"]
+    s0_matrix, s1_matrix, s2_matrix, s3_matrix, s4_matrix = (
+        data["s0_matrix"], data["s1_matrix"], data["s2_matrix"],
+        data["s3_matrix"], data["s4_matrix"],
+    )
     ryw, mr, mw, wfr = "read-your-writes", "monotonic-reads", "monotonic-writes", "writes-follow-reads"
+
+    def matrix_agg(
+        original_summary: dict[str, Any],
+        followup_summary: dict[str, Any],
+        config_id: str,
+        model: str,
+    ) -> dict[str, Any]:
+        """Use the original GCP C3 row and follow-up GCP C5/C6/C8 rows."""
+        source = original_summary if config_id == "C3" else followup_summary
+        return agg_row(source, config_id, model)
 
     s0_c3_ryw = agg_row(s0, "C3", ryw)
     s0_c3_mr = agg_row(s0, "C3", mr)
@@ -539,24 +561,33 @@ def report_content(lang: str, st, data: dict[str, Any]):
     s4_ryw = agg_row(s4, "C3", ryw)
     s4_mr = agg_row(s4, "C3", mr)
     s4_wfr = agg_row(s4, "C3", wfr)
+    s4_c8_ryw = matrix_agg(s4, s4_matrix, "C8", ryw)
+    s4_c8_mr = matrix_agg(s4, s4_matrix, "C8", mr)
+    s4_c8_wfr = matrix_agg(s4, s4_matrix, "C8", wfr)
 
     abstract_zh = (
-        "本项目在单台 Google Cloud 虚拟机中使用 Docker Compose 部署三节点 MongoDB 8.0.29 副本集，并系统研究读关注级别、写关注级别、读偏好与因果一致会话如何影响应用观察到的四项客户端中心一致性保证：读己之写、单调读、单调写和写跟随读。实验由正常运行、Secondary 停机、Primary 停机、Primary 网络分区、选举过渡窗口以及受控复制延迟六类场景组成。正式基线与稳态故障矩阵对每个配置和模型运行 500 个序列及 3 个随机种子；过渡窗口持续 35 秒；复制延迟实验冻结一个可读 Secondary 的应用线程。结果显示，C1、C2 与 C4 在所有成功检查中均未出现一致性违例；弱配置 C3 在正常状态的读己之写违例率为 {s0_ryw_rate}，在 S1-S3 为 {stable_range}。选举窗口产生短暂操作错误，但没有在强配置中引入新的成功读异常。S4 将弱配置的读己之写、单调读和写跟随读违例率分别放大到 {s4_ryw_rate}、{s4_mr_rate} 和 {s4_wfr_rate}，而单调写仍未违例。结果支持 MongoDB 文档对因果一致会话与 majority 读写关注级别的描述，同时说明“未观察到违例”是特定实验负载下的证据，而非对所有执行历史的形式证明。"
+        "本项目在单台 Google Cloud 虚拟机中使用 Docker Compose 部署三节点 MongoDB 8.0.29 副本集，并系统研究读关注级别、写关注级别、读偏好与因果一致会话如何影响应用观察到的四项客户端中心一致性保证：读己之写、单调读、单调写和写跟随读。实验由正常运行、Secondary 停机、Primary 停机、Primary 网络分区、选举过渡窗口以及受控复制延迟六类场景组成。正式基线与稳态故障矩阵对每个配置和模型运行 500 个序列及 3 个随机种子；过渡窗口持续 35 秒；复制延迟实验冻结一个可读 Secondary 的应用线程。结果显示，C1、C2 与 C4 在所有成功检查中均未出现一致性违例；弱配置 C3 在正常状态的读己之写违例率为 {s0_ryw_rate}，在 S1-S3 为 {stable_range}。选举窗口产生短暂操作错误，但没有在强配置中引入新的成功读异常。S4 将 C3 的读己之写、单调读和写跟随读违例率分别放大到 {s4_ryw_rate}、{s4_mr_rate} 和 {s4_wfr_rate}，而单调写仍未违例。进一步固定无因果会话与 Secondary 访问顺序后，使用 majority/majority 的 C8 在 S4 仍出现 {c8_ryw_rate} 的读己之写、{c8_mr_rate} 的单调读和 {c8_wfr_rate} 的写跟随读违例，说明读写关注不能替代因果会话顺序。结果支持 MongoDB 文档对因果一致会话与 majority 读写关注级别的描述，同时说明“未观察到违例”是特定实验负载下的证据，而非对所有执行历史的形式证明。"
     ).format(
         s0_ryw_rate=fmt_rate(s0_c3_ryw["violation_count"], s0_c3_ryw["check_count"]),
         stable_range=f"{min(stable_c3_ryw_rates):.2f}%-{max(stable_c3_ryw_rates):.2f}%",
         s4_ryw_rate=fmt_rate(s4_ryw["violation_count"], s4_ryw["check_count"]),
         s4_mr_rate=fmt_rate(s4_mr["violation_count"], s4_mr["check_count"]),
         s4_wfr_rate=fmt_rate(s4_wfr["violation_count"], s4_wfr["check_count"]),
+        c8_ryw_rate=fmt_rate(s4_c8_ryw["violation_count"], s4_c8_ryw["check_count"]),
+        c8_mr_rate=fmt_rate(s4_c8_mr["violation_count"], s4_c8_mr["check_count"]),
+        c8_wfr_rate=fmt_rate(s4_c8_wfr["violation_count"], s4_c8_wfr["check_count"]),
     )
     abstract_en = (
-        "This project deploys a three-member MongoDB 8.0.29 replica set with Docker Compose on one Google Cloud virtual machine and studies how read concern, write concern, read preference, and causally consistent sessions affect four client-centric guarantees: read-your-writes, monotonic reads, monotonic writes, and writes-follow-reads. The experiment suite covers normal operation, a stopped secondary, a stopped primary, a primary-side network partition, continuous requests during elections, and controlled replication lag. Each formal baseline and stable-fault matrix uses 500 sequences and three random seeds for every configuration-model pair; transition tests run for 35 seconds; the lag test freezes apply processing on one readable secondary. C1, C2, and C4 showed no consistency violations in successful checks. Weak configuration C3 produced a {s0_ryw_rate} read-your-writes violation rate in normal operation and {stable_range} under stable faults. Election windows caused transient operation errors but no new successful-read anomaly in the strong configurations. Under S4, C3 violation rates rose to {s4_ryw_rate} for read-your-writes, {s4_mr_rate} for monotonic reads, and {s4_wfr_rate} for writes-follow-reads, while monotonic writes remained intact. These observations support MongoDB's documented causal-consistency behavior, while the absence of observed violations remains experimental evidence rather than a proof over all histories."
+        "This project deploys a three-member MongoDB 8.0.29 replica set with Docker Compose on one Google Cloud virtual machine and studies how read concern, write concern, read preference, and causally consistent sessions affect four client-centric guarantees: read-your-writes, monotonic reads, monotonic writes, and writes-follow-reads. The experiment suite covers normal operation, a stopped secondary, a stopped primary, a primary-side network partition, continuous requests during elections, and controlled replication lag. Each formal baseline and stable-fault matrix uses 500 sequences and three random seeds for every configuration-model pair; transition tests run for 35 seconds; the lag test freezes apply processing on one readable secondary. C1, C2, and C4 showed no consistency violations in successful checks. Weak configuration C3 produced a {s0_ryw_rate} read-your-writes violation rate in normal operation and {stable_range} under stable faults. Election windows caused transient operation errors but no new successful-read anomaly in the strong configurations. Under S4, C3 violation rates rose to {s4_ryw_rate} for read-your-writes, {s4_mr_rate} for monotonic reads, and {s4_wfr_rate} for writes-follow-reads, while monotonic writes remained intact. After holding a non-causal session and Secondary order fixed, C8 still produced {c8_ryw_rate} read-your-writes, {c8_mr_rate} monotonic-read, and {c8_wfr_rate} writes-follow-reads violations under S4 despite majority/majority concerns, showing that concern settings do not replace causal session ordering. These observations support MongoDB's documented causal-consistency behavior, while the absence of observed violations remains experimental evidence rather than a proof over all histories."
     ).format(
         s0_ryw_rate=fmt_rate(s0_c3_ryw["violation_count"], s0_c3_ryw["check_count"]),
         stable_range=f"{min(stable_c3_ryw_rates):.2f}%-{max(stable_c3_ryw_rates):.2f}%",
         s4_ryw_rate=fmt_rate(s4_ryw["violation_count"], s4_ryw["check_count"]),
         s4_mr_rate=fmt_rate(s4_mr["violation_count"], s4_mr["check_count"]),
         s4_wfr_rate=fmt_rate(s4_wfr["violation_count"], s4_wfr["check_count"]),
+        c8_ryw_rate=fmt_rate(s4_c8_ryw["violation_count"], s4_c8_ryw["check_count"]),
+        c8_mr_rate=fmt_rate(s4_c8_mr["violation_count"], s4_c8_mr["check_count"]),
+        c8_wfr_rate=fmt_rate(s4_c8_wfr["violation_count"], s4_c8_wfr["check_count"]),
     )
 
     section(story, "摘要" if z else "Abstract", st)
@@ -574,10 +605,12 @@ def report_content(lang: str, st, data: dict[str, Any]):
         "The assignment requires a replicated database with tunable consistency, predictions about client-observed guarantees, and experiments under normal operation, node failures, and a network partition. MongoDB was selected because its driver exposes sessions, read concern, write concern, and read preference, allowing abstract consistency models to be mapped to reproducible client configurations.", st["body"]))
     questions = [
         "不同配置是否保持读己之写（RYW）、单调读（MR）、单调写（MW）与写跟随读（WFR）？",
+        "固定为无因果会话和相同的 Secondary 读取顺序时，read concern 与 write concern 各自如何改变可见异常？",
         "稳定故障状态与选举过渡窗口分别如何影响一致性和可用性？",
         "受控复制延迟能否把偶发的旧读放大为稳定、可解释的异常？",
     ] if z else [
         "Which configurations preserve read-your-writes (RYW), monotonic reads (MR), monotonic writes (MW), and writes-follow-reads (WFR)?",
+        "With non-causal sessions and Secondary read order held fixed, how do read concern and write concern change the anomalies observed by the client?",
         "How do stable degraded states and election transition windows differ in their effects on consistency and availability?",
         "Can controlled replication lag amplify occasional stale reads into stable, explainable anomalies?",
     ]
@@ -645,11 +678,14 @@ docker compose run --rm --no-deps runner"""
     ["C2", "因果" if z else "Causal", "majority", "majority", "secondary", "四项均成立；可能等待副本" if z else "All four hold; may wait for replica"],
     ["C3", "无因果" if z else "Non-causal", "w: 1", "local", "secondaryPreferred / Secondary", "RYW、MR、WFR 可能违例；MW 通常成立" if z else "RYW/MR/WFR may fail; MW usually holds"],
     ["C4", "无因果" if z else "Non-causal", "majority", "majority", "primary", "本负载中预期四项成立；不等同通用因果会话" if z else "Expected to hold here; not equivalent to general causal session"],
+    ["C5", "无因果" if z else "Non-causal", "w: 1", "majority", "定向交替 Secondary" if z else "Directed alternating Secondary", "检验 majority 读关注相对 C3 的作用" if z else "Tests majority read concern against C3"],
+    ["C6", "无因果" if z else "Non-causal", "majority", "local", "定向交替 Secondary" if z else "Directed alternating Secondary", "检验 majority 写关注相对 C3 的作用" if z else "Tests majority write concern against C3"],
+    ["C8", "无因果" if z else "Non-causal", "majority", "majority", "定向交替 Secondary" if z else "Directed alternating Secondary", "矩阵中最强关注组合；仍非因果会话" if z else "Strongest matrix concerns; still non-causal"],
     ]
     story.append(make_table(config_data, [13*mm, 22*mm, 24*mm, 24*mm, 38*mm, 46*mm], st))
     story.append(p(
-        "C3 是主动选择的弱配置：w:1 只要求单个 mongod 确认，local 读取不保证数据已被多数节点提交，而 Secondary 读取可能落后于 Primary。C4 用于分离“majority + Primary”与“因果会话”各自的作用；它在本实验的单客户端、Primary 定向负载中很强，但不应外推为所有跨客户端因果历史的保证。" if z else
-        "C3 is intentionally weak: w:1 requires acknowledgment from one mongod, local reads need not be majority committed, and a secondary may lag the primary. C4 separates the effect of majority/primary access from causal sessions. It is strong for this single-client, primary-directed workload but should not be generalized to every cross-client causal history.", st["body"]))
+        "配置分为两个相互衔接的实验组。C1-C4 是覆盖会话、路由与关注设置的代表性主实验；C3、C5、C6、C8 则构成受控的 2×2 矩阵。后四者都关闭因果会话，并按固定次序在可达 Secondary 间交替读取，只改变 write concern（w:1/majority）与 read concern（local/majority）。C3 同时属于两组，直接复用原正式数据而不重复实验。该矩阵用于归因关注设置对本负载中可见异常的影响，而不把 majority 误写成通用会话保证。" if z else
+        "The configurations form two connected experimental groups. C1-C4 are representative main configurations spanning session, routing, and concern choices. C3, C5, C6, and C8 form a controlled 2x2 matrix: all disable causal consistency and alternate reads across reachable Secondaries in the same deterministic order, while only write concern (w:1/majority) and read concern (local/majority) vary. C3 belongs to both groups, so its existing formal data is reused rather than rerun. The matrix attributes workload-visible differences to concern settings without treating majority as a general session guarantee.", st["body"]))
 
     section(story, "5. 实验设计" if z else "5. Experimental Design", st)
     section(story, "5.1 工作负载与测量" if z else "5.1 Workloads and Measurement", st, 2)
@@ -667,20 +703,18 @@ docker compose run --rm --no-deps runner"""
     ]
     story.append(make_table(scenario_data, [14*mm, 73*mm, 80*mm], st))
 
-    # Give the fault-injection rationale its own page. This keeps the bordered
-    # callout with its explanatory paragraph and avoids an isolated card.
-    story.append(PageBreak())
-    section(story, "5.2 故障注入与恢复" if z else "5.2 Fault Injection and Recovery", st, 2)
+    section(story, "5.2 对照逻辑与避免重复" if z else "5.2 Controlled Comparisons and Reuse", st, 2)
     story.append(p(
-        "S1 与 S2 使用 Docker 停止指定角色的容器。S3 使用 docker network disconnect 将故障前 Primary 从副本集网络断开，使剩余两节点形成多数派并选出新 Primary。T1/T2 在故障前启动四种配置的并发循环，把请求按开始时间标注为 pre、election 或 post。S4 仅在测试专用 compose 覆盖中启用 enableTestCommands=1，并对一个 Secondary 执行 rsSyncApplyStop；完成后执行 rsSyncApplyStop 的逆操作、等待追平，并重新创建普通容器。每个故障场景结束后均运行 restore_cluster.sh 和 cluster_status.sh 验证三节点健康。" if z else
-        "S1 and S2 stop the container holding the selected role. S3 uses docker network disconnect to isolate the pre-fault Primary from the replica-set network; the remaining two members retain a majority and elect a new Primary. T1/T2 start concurrent loops for all four configurations before fault injection and label requests by operation start time as pre, election, or post. S4 enables enableTestCommands=1 only in a test-specific Compose override and runs rsSyncApplyStop on one Secondary; afterward, apply processing is resumed, catch-up is verified, and normal containers are recreated. Every scenario ends with restore_cluster.sh and cluster_status.sh to confirm a healthy three-member set.", st["body"]))
+        "代表性组回答“实际组合整体表现如何”，受控矩阵回答“只改变读/写关注时发生什么”。矩阵的四个角分别为 C3（w:1/local）、C5（w:1/majority）、C6（majority/local）与 C8（majority/majority）。所有矩阵配置使用相同的无因果会话与定向交替 Secondary 路由，因此可以比较关注设置；C2 虽是有价值的因果强基线，但由驱动选择 Secondary，不能与 C8 宣称为严格的单变量会话消融。新增远程套件只运行 C5、C6、C8，C3 在分析时与它们合并。" if z else
+        "The representative group asks how realistic configuration bundles behave; the controlled matrix asks what changes when only read/write concern changes. Its corners are C3 (w:1/local), C5 (w:1/majority), C6 (majority/local), and C8 (majority/majority). Every matrix configuration uses a non-causal session and the same directed alternating-Secondary route, making concern comparisons valid. C2 remains a useful strong causal reference, but its Secondary is selected by the driver, so it is not presented as a strict one-variable session ablation against C8. The follow-up remote suite runs only C5, C6, and C8; C3 is merged at analysis time.", st["body"]))
+
+    section(story, "5.3 故障注入与恢复" if z else "5.3 Fault Injection and Recovery", st, 2)
+    story.append(p(
+        "S1 与 S2 使用 Docker 停止指定角色的容器。S3 使用 docker network disconnect 将故障前 Primary 从副本集网络断开，使剩余两节点形成多数派并选出新 Primary。T1/T2 在故障前启动所选配置的并发循环，把请求按开始时间标注为 pre、election 或 post。S4 仅在测试专用 compose 覆盖中启用 enableTestCommands=1，并对一个 Secondary 执行 rsSyncApplyStop。非因果矩阵仍按固定次序访问两个 Secondary，因此每个配置在同一调度下交替命中被冻结与正常节点；这是一项受控复制延迟实验，但不是“所有读取都固定到同一节点”。完成后恢复应用、等待追平并重新创建普通容器。每个故障场景结束后均验证三节点健康。" if z else
+        "S1 and S2 stop the container holding the selected role. S3 uses docker network disconnect to isolate the pre-fault Primary from the replica-set network; the remaining two members retain a majority and elect a new Primary. T1/T2 start concurrent loops for the selected configurations before fault injection and label requests by operation start time as pre, election, or post. S4 enables enableTestCommands=1 only in a test-specific Compose override and runs rsSyncApplyStop on one Secondary. The non-causal matrix still follows its fixed alternation across two Secondaries, so each configuration encounters the paused and current members under the same schedule; this is controlled replication lag, not a claim that every read is pinned to one node. Apply processing is then resumed, catch-up verified, and normal containers recreated. Every scenario ends with a healthy-three-member check.", st["body"]))
     append_callout(story,
         "设计理由：S0-S3 区分稳态一致性，T1/T2 捕获常被“等待选举完成”掩盖的短暂不可用窗口，S4 则提供可控因果机制，以验证 C3 的异常确实来自副本落后而非测试噪声。" if z else
         "Rationale: S0-S3 isolate stable-state consistency, T1/T2 expose the transient unavailability hidden by waiting for election completion, and S4 provides a controlled causal mechanism showing that C3 anomalies arise from replica lag rather than test noise.", st)
-
-    # Start the results on a clean page so the rationale callout and next
-    # chapter heading do not compete for the final lines of the design page.
-    story.append(PageBreak())
 
     def other_c3_models(summary: dict[str, Any]) -> str:
         parts = []
@@ -738,7 +772,75 @@ docker compose run --rm --no-deps runner"""
         "S1-S3 的 C3 RYW 率略低于 S0，不代表故障提高了弱配置的一致性。副本数量、被选择的 Secondary 和运行时调度改变了旧副本被抽中的概率；这些率描述的是该部署中的经验频率，而不是协议保证。" if z else
         "The slightly lower C3 RYW rates in S1-S3 do not mean faults strengthened C3. The number of available replicas, the selected Secondary, and runtime scheduling changed the chance of choosing a stale member. These rates are empirical frequencies in this deployment, not protocol guarantees.", st["body"]))
 
-    section(story, "6.2 延迟" if z else "6.2 Latency", st, 2)
+    section(story, "6.2 非因果读写关注矩阵" if z else "6.2 Non-Causal Read/Write Concern Matrix", st, 2)
+
+    def matrix_model_cell(
+        original_summary: dict[str, Any],
+        followup_summary: dict[str, Any],
+        config_id: str,
+    ) -> str:
+        parts = []
+        for label, model in (("RYW", ryw), ("MR", mr), ("MW", mw), ("WFR", wfr)):
+            row = matrix_agg(original_summary, followup_summary, config_id, model)
+            if row["violation_count"]:
+                parts.append(f"{label} {fmt_rate(row['violation_count'], row['check_count'])}")
+        return "; ".join(parts) if parts else ("零违例" if z else "No violations")
+
+    def matrix_stable_cell(config_id: str) -> str:
+        cells = []
+        for label, original_summary, followup_summary in (
+            ("S1", s1, s1_matrix), ("S2", s2, s2_matrix), ("S3", s3, s3_matrix)
+        ):
+            observed = matrix_model_cell(original_summary, followup_summary, config_id)
+            if observed not in ("零违例", "No violations"):
+                cells.append(f"{label}: {observed}")
+        return "; ".join(cells) if cells else ("S1-S3 零违例" if z else "No violations in S1-S3")
+
+    matrix_result_data = [[
+        "配置" if z else "Config", "读/写关注" if z else "Read/write concern",
+        "S0 观察" if z else "S0 observation", "S1-S3 观察" if z else "S1-S3 observation",
+        "S4 观察" if z else "S4 observation",
+    ]]
+    matrix_settings = {
+        "C3": "local / w:1", "C5": "majority / w:1",
+        "C6": "local / majority", "C8": "majority / majority",
+    }
+    for config_id in ("C3", "C5", "C6", "C8"):
+        matrix_result_data.append([
+            config_id,
+            matrix_settings[config_id],
+            matrix_model_cell(s0, s0_matrix, config_id),
+            matrix_stable_cell(config_id),
+            matrix_model_cell(s4, s4_matrix, config_id),
+        ])
+    story.append(p(
+        "本组比较不是在主实验之后临时追加一组不同逻辑的配置，而是用 C3 作为桥梁补齐三个缺失的关注组合。四项配置均为无因果会话、相同的定向交替 Secondary 路由；因此表格按场景直接比较 read concern 与 write concern 的经验影响。" if z else
+        "This comparison is not a separate experiment with a new logic bolted onto the main study. C3 is the bridge that completes the matrix with three missing concern combinations. All four configurations are non-causal and use the same directed alternating-Secondary route, so the table compares the empirical effect of read and write concern directly across scenarios.", st["body"]))
+    story.append(make_table(matrix_result_data, [13*mm, 31*mm, 37*mm, 49*mm, 37*mm], st))
+    story.append(Spacer(1, 4*mm))
+    story.append(figure(
+        FIG / "05_extended_concern_matrix.png",
+        "图 3. C3/C5/C6/C8 非因果 2×2 关注矩阵在 S0-S4 的违例率；C3 复用主实验数据。" if z else
+        "Figure 3. Violation rates for the non-causal C3/C5/C6/C8 2x2 concern matrix across S0-S4; C3 reuses the main-suite data.",
+        st,
+    ))
+
+    c3_s4_ryw = matrix_agg(s4, s4_matrix, "C3", ryw)
+    c5_s4_ryw = matrix_agg(s4, s4_matrix, "C5", ryw)
+    c6_s4_ryw = matrix_agg(s4, s4_matrix, "C6", ryw)
+    c8_s4_ryw = matrix_agg(s4, s4_matrix, "C8", ryw)
+    story.append(p(
+        (
+            "S4 的 RYW 违例率依次为 C3 {c3}、C5 {c5}、C6 {c6}、C8 {c8}。C3→C5 与 C6→C8 分别隔离把 read concern 从 local 提升为 majority 的效果；C3→C6 与 C5→C8 则隔离把 write concern 从 w:1 提升为 majority 的效果。无论差异大小，解释边界相同：majority 写关注解决确认耐久性，majority 读关注限制可见数据，但在无因果会话且读取落后 Secondary 时，两者单独或组合都不是 RYW/MR/WFR 的通用保证。" if z else
+            "Under S4, RYW violation rates were C3 {c3}, C5 {c5}, C6 {c6}, and C8 {c8}. C3→C5 and C6→C8 isolate raising read concern from local to majority; C3→C6 and C5→C8 isolate raising write concern from w:1 to majority. Whatever the measured magnitude, the interpretation boundary is the same: majority write concern addresses acknowledged durability and majority read concern restricts visibility, but without a causal session neither alone nor together is a general RYW/MR/WFR guarantee when reads can reach a lagging Secondary."
+        ).format(
+            c3=fmt_rate(c3_s4_ryw["violation_count"], c3_s4_ryw["check_count"]),
+            c5=fmt_rate(c5_s4_ryw["violation_count"], c5_s4_ryw["check_count"]),
+            c6=fmt_rate(c6_s4_ryw["violation_count"], c6_s4_ryw["check_count"]),
+            c8=fmt_rate(c8_s4_ryw["violation_count"], c8_s4_ryw["check_count"]),
+        ), st["body"]))
+
+    section(story, "6.3 延迟" if z else "6.3 Latency", st, 2)
 
     def latency_row(config: str) -> list[str]:
         cells = [config]
@@ -761,7 +863,7 @@ docker compose run --rm --no-deps runner"""
             "The table reports end-to-end latency for one RYW write-read pair. C3 is fastest, consistent with w:1/local avoiding majority waits, but this accompanies weaker visibility. C2's baseline WFR p95 was {c2:.2f} ms versus {c1:.2f} ms for C1, consistent with a causal secondary read sometimes waiting to satisfy afterClusterTime. Lower medians in some fault scenarios reflect container, cache, and runtime variation and should not be interpreted as fault-induced optimization."
         ).format(c1=c1_wfr_p95, c2=c2_wfr_p95), st["body"]))
 
-    section(story, "6.3 T1/T2：选举过渡窗口" if z else "6.3 T1/T2: Election Transition Windows", st, 2)
+    section(story, "6.4 T1/T2：选举过渡窗口" if z else "6.4 T1/T2: Election Transition Windows", st, 2)
     t1_totals, t2_totals = data["t1_totals"], data["t2_totals"]
     t1_election_mean = mean(data["t1_elections"])
     t2_election_mean = mean(data["t2_elections"])
@@ -778,8 +880,8 @@ docker compose run --rm --no-deps runner"""
     ]
     story.append(make_table(transition_data, [17*mm, 25*mm, 38*mm, 38*mm, 27*mm, 30*mm], st))
     story.append(Spacer(1, 4*mm))
-    story.append(figure(FIG / "02_transition_window_outcomes.png", "图 3. T1/T2 中各配置的成功检查、违例和操作错误。" if z else "Figure 3. Successful checks, violations, and operation errors by configuration in T1/T2.", st))
-    story.append(figure(FIG / "03_fault_timing.png", "图 4. S2、S3、T1 与 T2 的选举时间。T1/T2 显示三个随机种子。" if z else "Figure 4. Election timing for S2, S3, T1, and T2. T1/T2 show all three seeds.", st))
+    story.append(figure(FIG / "02_transition_window_outcomes.png", "图 4. T1/T2 中各配置的成功检查、违例和操作错误。" if z else "Figure 4. Successful checks, violations, and operation errors by configuration in T1/T2.", st))
+    story.append(figure(FIG / "03_fault_timing.png", "图 5. S2、S3、T1 与 T2 的选举时间。T1/T2 显示三个随机种子。" if z else "Figure 5. Election timing for S2, S3, T1, and T2. T1/T2 show all three seeds.", st))
 
     def phase_cell(totals: dict[str, dict[str, int]], phase: str) -> str:
         v, c = totals[phase]["violations"], totals[phase]["checks"]
@@ -800,7 +902,21 @@ docker compose run --rm --no-deps runner"""
             "The transition tests give two complementary conclusions. First, successful RYW pairs under C1, C2, and C4 recorded {strong} violations combined. Second, {t1_err} and {t2_err} operation errors occurred during elections, showing a temporary availability cost when no writable Primary could be selected immediately. C3 was already weak before each fault, with similar pre and election violation rates; the election did not create a new C3 consistency defect, but mainly added transient failures. The per-seed election-window error count varied noticeably (T1: {t1_range}; T2: {t2_range}), which on a single shared VM more likely reflects scheduling noise than a real difference in protocol behaviour, so it is reported here rather than treated as a stable quantitative result."
         ).format(strong=t1_strong + t2_strong, t1_err=t1_totals["errors"], t2_err=t2_totals["errors"], t1_range=t1_err_range, t2_range=t2_err_range), st["body"]))
 
-    section(story, "6.4 S4：受控复制延迟" if z else "6.4 S4: Controlled Replication Lag", st, 2)
+    matrix_transition_parts = []
+    for config_id in ("C5", "C6", "C8"):
+        t1_row = data["t1_matrix_totals"][config_id]
+        t2_row = data["t2_matrix_totals"][config_id]
+        matrix_transition_parts.append(
+            f"{config_id}: T1 {fmt_int(t1_row['violations'])}/{fmt_int(t1_row['checks'])}, "
+            f"T2 {fmt_int(t2_row['violations'])}/{fmt_int(t2_row['checks'])}"
+        )
+    story.append(p(
+        (
+            "受控矩阵新增三角在相同远程环境中的过渡窗口 RYW 违例/成功检查为：{parts}。C3 的原过渡数据已经在上表和图中呈现，因此没有重复运行。该结果用于观察选举期间 concern 组合是否改变成功历史中的旧读；操作错误仍与一致性违例分开解释。" if z else
+            "For the three new matrix corners in the same remote environment, transition-window RYW violations/successful checks were: {parts}. C3's original transition data is already included above and was not rerun. These results test whether concern combinations change stale successful histories during elections; operation errors remain separate from consistency violations."
+        ).format(parts="; ".join(matrix_transition_parts)), st["body"]))
+
+    section(story, "6.5 S4：受控复制延迟" if z else "6.5 S4: Controlled Replication Lag", st, 2)
     s4_ryw, s4_mr, s4_mw, s4_wfr = (agg_row(s4, "C3", m) for m in (ryw, mr, mw, wfr))
     s4_data = [
         ["模型" if z else "Model", "违例 / 检查" if z else "Violations / checks", "违例率" if z else "Rate", "解释" if z else "Interpretation"],
@@ -811,7 +927,7 @@ docker compose run --rm --no-deps runner"""
     ]
     story.append(make_table(s4_data, [23*mm, 39*mm, 25*mm, 80*mm], st))
     story.append(Spacer(1, 4*mm))
-    story.append(figure(FIG / "04_s4_model_violation_rates.png", "图 5. S4 中弱配置 C3 的各模型违例率。" if z else "Figure 5. Per-model violation rates for weak configuration C3 under S4.", st))
+    story.append(figure(FIG / "04_s4_model_violation_rates.png", "图 6. S4 中弱配置 C3 的各模型违例率。" if z else "Figure 6. Per-model violation rates for weak configuration C3 under S4.", st))
     s4_totals = s4["totals"]
     story.append(p(
         (
@@ -824,92 +940,8 @@ docker compose run --rm --no-deps runner"""
             lag=(data["s4_lag_end_ms"] or 0) / 1000, catchup=data["s4_catchup_ms"] or 0,
         ), st["body"]))
 
-    section(story, "6.5 受控关注矩阵与会话消融" if z else "6.5 Controlled Concern Matrix and Session Ablation", st, 2)
-    s0_ext, s1_ext, s2_ext, s3_ext, s4_ext = (
-        data["s0_ext"], data["s1_ext"], data["s2_ext"], data["s3_ext"], data["s4_ext"]
-    )
-    story.append(p(
-        "C1-C4 一次性改变了会话、写关注、读关注与读偏好中的多个变量，其中 C3 的弱表现无法单独归因于任一维度。本节新增四个配置 C5-C8，把读偏好固定为 secondary，构造一个 2x2 的写/读关注矩阵（C2、C5、C6、C7，会话均为因果）并额外加入 C8（会话关闭、其余与 C2 相同），从而分别回答：固定因果会话与 Secondary 读取时，写/读关注各自贡献了什么；以及固定 majority/majority/secondary 时，单独关闭因果会话会改变什么。" if z else
-        "C1-C4 changed session, write concern, read concern, and read preference all at once, so C3's weak results cannot be pinned on any single setting. C5-C8 add four configurations with read preference fixed at secondary: C2, C5, C6, and C7 form a 2x2 write/read-concern matrix under a causal session, and C8 repeats C2's concern settings with the session turned off. The first four isolate what write concern and read concern each contribute once session and read preference are fixed; C8 isolates what the session itself contributes once concern and read preference are fixed.", st["body"]))
-    ext_config_data = [
-        ["配置" if z else "Config", "会话" if z else "Session", "写关注" if z else "Write concern", "读关注" if z else "Read concern", "预测" if z else "Prediction"],
-        ["C2", "因果" if z else "Causal", "majority", "majority", "四项均有持久保证" if z else "All four durably guaranteed"],
-        ["C5", "因果" if z else "Causal", "w: 1", "majority", "MR、WFR 有持久保证；RYW、MW 不保证" if z else "MR, WFR durably guaranteed; RYW, MW not"],
-        ["C6", "因果" if z else "Causal", "majority", "local", "MW 有保证；RYW、MR、WFR 不保证" if z else "MW guaranteed; RYW, MR, WFR not"],
-        ["C7", "因果" if z else "Causal", "w: 1", "local", "四项均不保证" if z else "None of the four guaranteed"],
-        ["C8", "无因果" if z else "Non-causal", "majority", "majority", "四项均无通用会话保证；本负载 MW 可能仍成立" if z else "No general session guarantee for any; MW may still hold in this workload"],
-    ]
-    story.append(make_table(ext_config_data, [13*mm, 22*mm, 26*mm, 26*mm, 84*mm], st))
-    story.append(Spacer(1, 3*mm))
-
-    s0_c8_ryw = agg_row(s0_ext, "C8", ryw)
-    s1_c8_ryw = agg_row(s1_ext, "C8", ryw)
-    story.append(p(
-        (
-            "S0-S3 下 C5、C6、C7 在四个模型上均为零违例（附录表未单独列出），说明本负载下单靠因果会话与健康的 Secondary 拓扑，即使写/读关注很弱，也足以避免可观测的违例——这与预测不完全一致：预测认为 C7（w:1、local）四项均不保证，但零故障、零人为延迟时并没有暴露出这一点，说明“未观察到违例”仍是负载相关的经验证据而非会话强度的证明。C8 是例外：即使在没有任何故障注入的 S0 正常运行下，它就已经出现 {s0_rate} 的 RYW 违例（{s0_v}/{s0_c}），S1 稳定故障下降到 {s1_rate}（{s1_v}/{s1_c}）。这直接支持第二个问题的答案：仅仅使用 majority 写关注和 majority 读关注，如果没有因果会话，并不能保证 RYW——多数确认只保证耐久性，不保证客户端接下来选中的 Secondary 已经应用了它自己的写入。" if z else
-            "Across S0-S3, C5, C6, and C7 recorded zero violations on every model (not tabulated separately): with a healthy topology and a causal session, even weak write/read concern avoided observable violations in this workload. That only partly matches the prediction. C7 (w:1, local) was predicted to guarantee none of the four models, but no violation appeared without a fault or artificial lag, so a zero-violation result here is workload-dependent evidence, not proof that the session is strong. C8 is the exception: under fault-free S0 it already showed a {s0_rate} read-your-writes violation rate ({s0_v}/{s0_c}), dropping to {s1_rate} under the stable S1 fault ({s1_v}/{s1_c}). Majority write concern plus majority read concern, without a causal session, does not guarantee read-your-writes: majority only guarantees durability, not that the next Secondary the client happens to read from has already applied that write."
-        ).format(
-            s0_rate=fmt_rate(s0_c8_ryw["violation_count"], s0_c8_ryw["check_count"]),
-            s0_v=fmt_int(s0_c8_ryw["violation_count"]), s0_c=fmt_int(s0_c8_ryw["check_count"]),
-            s1_rate=fmt_rate(s1_c8_ryw["violation_count"], s1_c8_ryw["check_count"]),
-            s1_v=fmt_int(s1_c8_ryw["violation_count"]), s1_c=fmt_int(s1_c8_ryw["check_count"]),
-        ), st["body"]))
-
-    story.append(figure(
-        FIG / "05_extended_concern_matrix.png",
-        "图 6. C2、C5-C8 在 S0-S4 下的违例率矩阵；S4 中所有配置读取同一个被暂停应用 oplog 的 Secondary。" if z else
-        "Figure 6. Violation-rate matrix for C2, C5-C8 across S0-S4; under S4 every configuration reads the same Secondary with paused oplog application.",
-        st,
-    ))
-    story.append(Spacer(1, 4*mm))
-
-    def ext_row(cfg: str) -> list[str]:
-        cells = [cfg]
-        for model in (ryw, mr, mw, wfr):
-            row = agg_row(s4_ext, cfg, model)
-            v, c, e = row["violation_count"], row["check_count"], row["error_count"]
-            total = c + e
-            cells.append(f"{fmt_rate(v, c)} / err {e/total*100:.0f}%" if total else "n/a")
-        return cells
-
-    s4_matrix_data = [
-        ["配置" if z else "Config", "RYW 违例率/错误率" if z else "RYW rate/err", "MR", "MW", "WFR"],
-        ext_row("C2"), ext_row("C5"), ext_row("C6"), ext_row("C7"), ext_row("C8"),
-    ]
-    story.append(make_table(s4_matrix_data, [16*mm, 40*mm, 40*mm, 30*mm, 40*mm], st))
-    story.append(Spacer(1, 4*mm))
-    story.append(figure(
-        FIG / "06_session_ablation_c2_vs_c8.png",
-        "图 7. C2 与 C8 在 S4 下的对照：写/读关注与读偏好相同，唯一差异是因果会话。" if z else
-        "Figure 7. C2 versus C8 under S4: identical write/read concern and read preference, differing only in the causal session.",
-        st,
-    ))
-    story.append(Spacer(1, 4*mm))
-
-    c2_wfr = agg_row(s4_ext, "C2", wfr)
-    c8_wfr = agg_row(s4_ext, "C8", wfr)
-    story.append(p(
-        (
-            "S4 把读偏好固定为 Secondary，并让全部六个配置读取同一个被 rsSyncApplyStop 暂停的节点，因此矩阵中的差异只能来自会话与关注设置。结果清楚回答了第一个问题：只要因果会话开启（C2、C5、C6、C7），RYW/MR/WFR 的违例率都是 0%——但操作错误率从约 33% 升到约 51% 不等，说明因果读在无法满足 afterClusterTime 时选择等待并超时，而不是返回旧版本；写/读关注在这四个配置之间的差异主要体现在错误率的高低和 6.1-6.4 节测得的延迟上，而不是体现在是否违反四项保证上。第二个问题由 C2 与 C8 的直接对照回答：两者写/读关注、读偏好完全相同，仅会话不同，但 C8 的 WFR 违例率是 {c8_wfr_rate}（对比 C2 的 {c2_wfr_rate}，其操作错误率反而是 {c2_wfr_err:.0f}%）。也就是说，因果会话把“成功但读到旧值”变成了“操作失败”，这是一种可观测、可归因的机制差异，而不是同一现象的两种描述。" if z else
-            "S4 holds read preference at Secondary and routes all six configurations to the same node paused with rsSyncApplyStop, so any difference in the matrix comes only from session and concern settings. With a causal session on (C2, C5, C6, C7), RYW/MR/WFR violation rates are all 0%, but operation-error rates run from roughly 33% to 51%: a causal read that cannot satisfy afterClusterTime waits and times out instead of returning a stale version. Write/read concern still matters among these four configs, but mainly through error-rate magnitude and the latencies measured in 6.1-6.4, not through whether the four guarantees hold. C2 and C8 make the session's effect explicit: with identical write/read concern and read preference and only the session differing, C8's WFR violation rate is {c8_wfr_rate}, while C2's is {c2_wfr_rate} and its operation-error rate is {c2_wfr_err:.0f}% instead. The causal session does not stop the read from going stale; it stops the stale read from succeeding."
-        ).format(
-            c8_wfr_rate=fmt_rate(c8_wfr["violation_count"], c8_wfr["check_count"]),
-            c2_wfr_rate=fmt_rate(c2_wfr["violation_count"], c2_wfr["check_count"]),
-            c2_wfr_err=c2_wfr["error_count"] / (c2_wfr["check_count"] + c2_wfr["error_count"]) * 100,
-        ), st["body"]))
-
-    t1_ext, t2_ext = data["t1_ext_totals"], data["t2_ext_totals"]
-    ext_transition_parts = []
-    for cfg in ("C5", "C6", "C7", "C8"):
-        t1v, t2v = t1_ext[cfg]["violations"], t2_ext[cfg]["violations"]
-        ext_transition_parts.append(f"{cfg} T1 {t1v}, T2 {t2v}")
-    story.append(p(
-        (
-            "过渡窗口 T1/T2（每场景 3 个种子，C5-C8 各自持续发送 RYW 写后读）中的违例次数为：{parts}。C5-C7（因果）与 C1/C2/C4 的模式一致，成功历史中未见违例；C8（无因果）出现了个位数的零星违例，量级上与 S0/S1 的正常运行结果相当，说明选举过渡本身并没有为 C8 带来新的失效模式，只是延续了它在无故障时已经存在的弱点。" if z else
-            "Violation counts in the T1/T2 transition windows (3 seeds each, C5-C8 continuously sending RYW write-then-read pairs) were: {parts}. C5-C7 (causal) match the C1/C2/C4 pattern of no violations in successful histories. C8 (non-causal) showed a handful of scattered violations, on the same order as its S0/S1 normal-operation results; the election transition did not introduce a new failure mode for C8, it just continued the weakness that was already there."
-        ).format(parts="; ".join(ext_transition_parts)), st["body"]))
-
     section(story, "7. 预测与观察对照" if z else "7. Predictions Versus Observations", st)
+    section(story, "7.1 代表性配置" if z else "7.1 Representative Configurations", st, 2)
     pred_data = [["配置" if z else "Config", "预测" if z else "Prediction", "观察" if z else "Observation", "结论" if z else "Assessment"],
         ["C1", "四项成立" if z else "All four hold", "所有 S0-S3 检查与 T1/T2 成功 RYW 均零违例" if z else "Zero violations in S0-S3 and successful T1/T2 RYW", "一致" if z else "Agrees"],
         ["C2", "跨副本因果会话仍成立" if z else "Cross-member causal session holds", "读取 Secondary 时仍零违例；部分尾延迟较高" if z else "Zero violations on Secondary reads; some higher tail latency", "一致" if z else "Agrees"],
@@ -921,6 +953,29 @@ docker compose run --rm --no-deps runner"""
         "最重要的区分是安全性与可用性。强配置没有把选举期间的失败请求伪装成一致性违例：它们拒绝或重试无法安全完成的操作，而成功完成的历史继续满足 RYW。相反，C3 提供低延迟和较高可用读取，但允许成功返回旧版本。" if z else
         "The key distinction is safety versus availability. The strong configurations did not convert election-time failures into consistency anomalies: unsafe operations failed or retried, while successful histories continued to satisfy RYW. C3 instead offered low-latency, highly available reads that could successfully return stale versions.", st)
 
+    section(story, "7.2 受控关注矩阵" if z else "7.2 Controlled Concern Matrix", st, 2)
+    matrix_prediction_data = [[
+        "配置" if z else "Config", "隔离比较" if z else "Isolated comparison",
+        "理论边界" if z else "Theoretical boundary", "观察（S0 / S4）" if z else "Observation (S0 / S4)",
+    ],
+    ["C3", "矩阵基准：local + w:1" if z else "Matrix baseline: local + w:1",
+     "无因果会话，四项均无通用保证；本负载 MW 预期有序" if z else "No general session guarantees; workload likely preserves MW",
+     f"{matrix_model_cell(s0, s0_matrix, 'C3')} / {matrix_model_cell(s4, s4_matrix, 'C3')}"],
+    ["C5", "对 C3 仅提升 read concern" if z else "Only read concern raised from C3",
+     "majority 读不等于读到客户端最新写" if z else "Majority read does not mean the client's latest write",
+     f"{matrix_model_cell(s0, s0_matrix, 'C5')} / {matrix_model_cell(s4, s4_matrix, 'C5')}"],
+    ["C6", "对 C3 仅提升 write concern" if z else "Only write concern raised from C3",
+     "majority 写保证确认耐久性，不保证目标 Secondary 已应用" if z else "Majority write protects durability, not Secondary apply recency",
+     f"{matrix_model_cell(s0, s0_matrix, 'C6')} / {matrix_model_cell(s4, s4_matrix, 'C6')}"],
+    ["C8", "C5/C6 的 majority/majority 交点" if z else "Majority/majority intersection of C5/C6",
+     "关注组合仍不能替代因果会话" if z else "Concern combination still does not replace a causal session",
+     f"{matrix_model_cell(s0, s0_matrix, 'C8')} / {matrix_model_cell(s4, s4_matrix, 'C8')}"],
+    ]
+    story.append(make_table(matrix_prediction_data, [14*mm, 42*mm, 58*mm, 53*mm], st))
+    story.append(p(
+        "矩阵的价值不在于期待四行一定呈现四种完全不同结果，而在于排除会话和路由变化后判断 concern 是否足以改变客户端看到的历史。若 majority/majority 仍出现成功旧读，这正是结论：耐久性与提交可见性参数不能自动提供跨副本会话顺序。" if z else
+        "The matrix is valuable even if its four rows do not produce four radically different outcomes. By holding session and routing constant, it tests whether concern alone changes the histories visible to the client. If majority/majority still returns a successful stale read, that is the result: durability and committed visibility do not automatically provide cross-replica session ordering.", st["body"]))
+
     section(story, "8. 局限性与有效性威胁" if z else "8. Limitations and Threats to Validity", st)
     limits = [
         "三个节点位于同一 VM，共享硬件、磁盘与底层网络；容器隔离不能替代三台物理或虚拟主机。",
@@ -930,9 +985,9 @@ docker compose run --rm --no-deps runner"""
         "每项仅使用三个种子；工作负载、驱动服务器选择与本机调度会改变经验违例率。零违例不是数学证明。",
         "阶段以操作开始时间分类；跨越选举边界的单次操作仍只属于一个阶段。",
         "MW 运行了每个配置每种子 500 次顺序写，但汇总中的主要判定分母是每种子的最终历史验证，因此表中显示 3 次验证。",
-        "云账单存在报告延迟。实验结束时 VM 已停止；控制台显示本月总成本 0.14 美元、抵扣 0.14 美元、净成本 0，50 美元额度剩余 49.64 美元（约 99%）。",
-        "C5-C8 的正式数据在一台本地 macOS 工作站（Docker Desktop 内的虚拟化 Linux）上采集，而不是采集 C1-C4 数据的 GCP 虚拟机；两套环境的容器间网络与磁盘特性不同，因此 6.5 节内部（C2、C5-C8 互相对照）的比较是可靠的，但把 C5-C8 的绝对数值与 6.1-6.4 节 C1-C4 的绝对数值跨环境直接比较应谨慎，尤其是对延迟敏感的检查（如 RYW）。",
-        "S4 中因果配置的 max_time_ms 设为 300 ms，只用于把“客户端等待多久才判定失败”限制在可承受范围内，防止 500x3 的正式规模测试挂起；这个数值不是对因果一致性真实等待时间的测量，重点是操作是否超时，而不是超时前等待了多久。",
+        "云账单存在报告延迟。实验结束时 VM 已停止；最终检查时 50 美元课程额度剩余 47.13 美元（94%），即账户累计已消耗 2.87 美元。费用报告仅更新到 9 月 15 日，显示本月 Compute Engine 使用费 1.70 美元、抵扣 1.70 美元、净成本 0；9 月 16 日本轮实验尚未入账，因此不能把 2.87 美元全部归因于本轮运行。",
+        "C3 来自主实验的较早远程运行，C5/C6/C8 来自同一 GCP 虚拟机上的后续运行。软件与部署配置一致，但采集时间不同，缓存和宿主机调度仍可能影响绝对延迟；因此矩阵对违例模式的比较比微小延迟差更可靠。",
+        "S4 暂停一个 Secondary，但矩阵配置按固定次序交替读取两个 Secondary；各配置接受相同路由调度，然而这不是每个操作都读取同一冻结节点的严格配对试验。",
     ] if z else [
         "All members share one VM, hardware, disk, and underlying network; container isolation is not equivalent to three physical or virtual hosts.",
         "S1-S3 run the full matrix after election completion. T1/T2 cover only RYW continuously during the transition; the other three models were not stressed through elections.",
@@ -941,9 +996,9 @@ docker compose run --rm --no-deps runner"""
         "Only three seeds are used. Workload shape, driver selection, and local scheduling influence empirical rates. Zero observed violations is not a mathematical proof.",
         "Phases are assigned by operation start time; an operation crossing an election boundary still belongs to one phase.",
         "MW performs 500 sequential writes per configuration and seed, but the summary denominator counts one final history validation per seed; therefore the table reports three validations.",
-        "Cloud billing has reporting lag. The VM was stopped after experimentation. The console showed USD 0.14 gross month cost, USD 0.14 credits, zero net cost, and USD 49.64 of the USD 50 credit remaining (about 99%).",
-        "The formal C5-C8 data was collected on a local macOS workstation (a virtualized Linux VM inside Docker Desktop), not the GCP VM used for C1-C4. Container networking and disk characteristics differ between the two environments, so comparisons within 6.5 (C2 and C5-C8 against each other) are reliable, but comparing C5-C8's absolute numbers directly against C1-C4's in 6.1-6.4 across environments should be done cautiously, especially for latency-sensitive checks such as RYW.",
-        "max_time_ms for causal configurations under S4 is set to 300 ms to bound how long the client waits before declaring failure, keeping the 500x3 formal run tractable. It does not measure how long causal consistency actually needs to catch up; the run only records whether an operation timed out.",
+        "Cloud billing has reporting lag. The VM was stopped after experimentation. At the final check, USD 47.13 (94%) of the USD 50 course credit remained, so USD 2.87 had been consumed over the account lifetime. The cost report was updated only through 15 September and showed USD 1.70 of Compute Engine usage, USD 1.70 in credits, and zero net cost for the month; the 16 September run had not posted, so the full USD 2.87 cannot be attributed to this run.",
+        "C3 comes from the earlier main-suite remote run, while C5/C6/C8 come from a later run on the same GCP VM. Software and deployment settings match, but cache and host scheduling can still affect absolute latency across collection times; violation patterns are therefore more reliable than small latency differences.",
+        "S4 pauses one Secondary while matrix configurations alternate reads across two Secondaries in a fixed order. Every configuration receives the same routing schedule, but this is not a strict operation-by-operation pairing in which every read targets the paused member.",
     ]
     for item in limits:
         story.append(bullet(item, st["bullet"]))
@@ -951,29 +1006,25 @@ docker compose run --rm --no-deps runner"""
     section(story, "9. 可复现性" if z else "9. Reproducibility", st)
     section(story, "9.1 主要命令" if z else "9.1 Main Commands", st, 2)
     commands = """# Baseline S0
-docker compose run --rm --no-deps runner python -m experiments.run_baseline \\
+docker compose run --rm --no-deps runner python -m experiments.run_baseline \
   --iterations 500 --seeds 20260830,20260831,20260832 --label formal
 
 # Stable fault scenarios (replace the scenario name for S2/S3)
-./scripts/run_fault_scenario.sh S1-secondary-failure 500 \\
+./scripts/run_fault_scenario.sh S1-secondary-failure 500 \
   20260830,20260831,20260832 formal
 
 # Transition windows; repeat for seeds 20260830-20260832
 ./scripts/run_transition_scenario.sh T1-primary-stop-transition 20260830 formal 35 3
 ./scripts/run_transition_scenario.sh T2-primary-partition-transition 20260830 formal 35 3
 
-# Controlled replication lag (default configs: C2,C3,C5,C6,C7,C8)
-./scripts/run_replication_lag_scenario.sh 500 \\
+# Controlled replication lag for the original representative suite
+./scripts/run_replication_lag_scenario.sh 500 \
   20260830,20260831,20260832 formal
 
-# C5-C8 controlled concern-matrix extension (6.5): same commands, restricted
-# to the new configs via --configs (run_fault_scenario.sh and
-# run_replication_lag_scenario.sh take it as a trailing positional argument;
-# transition_window.py, invoked by run_transition_scenario.sh, takes it as
-# a flag and otherwise defaults to every config in experiments.common.CONFIGS).
-docker compose run --rm --no-deps runner python -m experiments.run_baseline \\
-  --configs C5,C6,C7,C8 --iterations 500 \\
-  --seeds 20260830,20260831,20260832 --label formal
+# Complete the non-causal concern matrix on the same remote VM.
+# This resumable suite runs only C5/C6/C8 and reuses the existing C3 data.
+./scripts/run_noncausal_concern_matrix.sh noncausal-remote-v2 500 \
+  20260830,20260831,20260832
 
 # Recovery and report figures
 ./scripts/restore_cluster.sh
@@ -997,20 +1048,20 @@ python3 -m analysis.generate_report_figures"""
         ["S4", s4["run_id"]],
         ["T1", "; ".join(run_suffix(r["run_id"]) for r in data["t1_runs"])],
         ["T2", "; ".join(run_suffix(r["run_id"]) for r in data["t2_runs"])],
-        ["S0 (C5-C8)", s0_ext["run_id"]],
-        ["S1 (C5-C8)", s1_ext["run_id"]],
-        ["S2 (C5-C8)", s2_ext["run_id"]],
-        ["S3 (C5-C8)", s3_ext["run_id"]],
-        ["S4 (C2,C3,C5-C8)", s4_ext["run_id"]],
-        ["T1 (C5-C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t1_ext_runs"])],
-        ["T2 (C5-C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t2_ext_runs"])],
+        ["S0 (C5/C6/C8)", s0_matrix["run_id"]],
+        ["S1 (C5/C6/C8)", s1_matrix["run_id"]],
+        ["S2 (C5/C6/C8)", s2_matrix["run_id"]],
+        ["S3 (C5/C6/C8)", s3_matrix["run_id"]],
+        ["S4 (C5/C6/C8)", s4_matrix["run_id"]],
+        ["T1 (C5/C6/C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t1_matrix_runs"])],
+        ["T2 (C5/C6/C8)", "; ".join(run_suffix(r["run_id"]) for r in data["t2_matrix_runs"])],
     ]
     story.append(make_table([["场景" if z else "Scenario", "Selected formal run ID / suffix"]] + run_ids, [26*mm, 141*mm], st))
 
     section(story, "10. 结论" if z else "10. Conclusion", st)
     story.append(p(
-        "实验完成了从理论预测、复制集部署、可调配置、四模型工作负载到故障注入和机制验证的闭环。结果表明，MongoDB 的强会话配置在本实验所有成功历史中保持四项客户端中心保证；弱 Secondary 读取能以更低延迟返回，但在正常复制、选举前后以及受控滞后下会返回旧版本。节点停机与网络分区最直接的过渡影响是短暂不可用，而不是强配置成功操作的一致性退化。最终，S4 把 RYW、MR 与 WFR 的弱行为同时放大，并保留 MW，从而说明四项会话保证是并列且可独立观察的。" if z else
-        "The project completes a full cycle from theoretical prediction through replica-set deployment, tunable configurations, four executable model workloads, fault injection, and mechanistic validation. Strong MongoDB session configurations preserved all four client-centric guarantees in every successful history observed. Weak secondary reads returned faster but could return older versions during normal replication, around elections, and under controlled lag. The most direct transition effect of node failure and partition was temporary unavailability rather than degradation of successful operations under strong configurations. Finally, S4 amplified RYW, MR, and WFR failures while preserving MW, demonstrating that these session guarantees are complementary and independently observable.", st["body"]))
+        "实验完成了从理论预测、复制集部署、可调配置、四模型工作负载到故障注入和机制验证的闭环。代表性配置展示了因果会话、路由和关注设置共同作用下的端到端行为；C3/C5/C6/C8 非因果矩阵进一步固定会话与 Secondary 访问顺序，使 read concern 与 write concern 的影响能够被单独比较而不重复 C3。结果区分了耐久性、提交可见性、会话顺序和可用性：majority 参数并不自动等价于跨副本客户端中心保证，选举最直接的影响是短暂不可用，而 S4 则把成功旧读放大为可解释的机制证据。" if z else
+        "The project completes a full cycle from theoretical prediction through replica-set deployment, tunable configurations, four executable model workloads, fault injection, and mechanistic validation. The representative configurations show the end-to-end interaction of causal sessions, routing, and concern settings. The non-causal C3/C5/C6/C8 matrix then holds session and Secondary order fixed, allowing read and write concern to be compared without rerunning C3. The results separate durability, committed visibility, session ordering, and availability: majority settings do not automatically equal cross-replica client-centric guarantees, elections primarily caused temporary unavailability, and S4 amplified successful stale reads into mechanistic evidence.", st["body"]))
 
     section(story, "参考文献" if z else "References", st)
     refs = [
@@ -1032,8 +1083,8 @@ python3 -m analysis.generate_report_figures"""
 
     section(story, "AI 使用声明" if z else "AI Usage Statement", st)
     story.append(p(
-        "本项目使用 OpenAI ChatGPT/Codex 协助解释课程概念、规划实验、起草和审阅脚本、组织结果、生成图表与润色报告。另使用 Anthropic Claude（Claude Code）审查仓库的可复现性问题并修复报告生成脚本（跨平台字体、数据驱动表格），以及实现并运行 6.5 节的 C5-C8 受控关注矩阵与因果会话消融扩展实验，包括新增实验代码、正式规模（500 次序列 × 3 种子）实验执行、新增图表与报告文字。所有云资源创建、命令执行、故障注入、结果文件检查、参考文献核对及最终结论均由项目成员监督和验证。报告中的实验数据来自仓库中保存的真实运行输出，不由 AI 虚构。项目成员对提交内容、实验解释和任何错误承担最终责任。" if z else
-        "OpenAI ChatGPT/Codex was used to help explain course concepts, plan experiments, draft and review scripts, organize results, generate charts, and edit the report. Anthropic's Claude (Claude Code) was also used to review the repository for reproducibility issues and fix the report-generation script (cross-platform font handling, data-driven tables), and to implement and run Section 6.5's C5-C8 controlled concern-matrix and causal-session-ablation extension, including the new experiment code, the formal-scale (500 sequences x 3 seeds) experiment runs, the new figures, and the report text. Cloud-resource creation, command execution, fault injection, result-file inspection, source verification, and final conclusions were supervised and checked by the project member. Experimental values in this report come from the stored run outputs and were not fabricated by AI. The project member remains responsible for the submitted content, interpretation, and any errors.", st["body"]))
+        "本项目使用 OpenAI ChatGPT/Codex 协助解释课程概念、规划与审阅实验、修改脚本、组织结果、生成图表和润色中英文报告。Anthropic Claude（Claude Code）曾用于审查可复现性、修复跨平台字体与数据驱动报告代码，并实现和运行较早的 C5-C8 因果会话扩展；该扩展经复核后因变量控制与运行环境不符合最终研究设计而被保留为历史记录、不用于本文结论。最终的 C3/C5/C6/C8 非因果关注矩阵由 Codex 协助重构，并在与主实验相同的 GCP 虚拟机上重新运行缺失的 C5/C6/C8 组合。所有云资源操作、故障注入、输出检查与结论均由项目成员监督；报告数据来自仓库中的真实运行输出，并非由 AI 生成。" if z else
+        "OpenAI ChatGPT/Codex assisted with course-concept explanation, experiment planning and review, script changes, result organization, figure generation, and bilingual report editing. Anthropic Claude (Claude Code) was previously used to review reproducibility, fix cross-platform font and data-driven reporting code, and implement and run an earlier causal-session C5-C8 extension. After review, that extension was retained only as historical output and excluded from this report because its variable controls and execution environment did not match the final design. Codex assisted in restructuring the final non-causal C3/C5/C6/C8 concern matrix and rerunning only the missing C5/C6/C8 combinations on the same GCP VM as the main study. Project members supervised cloud operations, fault injection, output checks, and conclusions; all reported data comes from stored experiment output and was not generated by AI.", st["body"]))
 
     return story
 

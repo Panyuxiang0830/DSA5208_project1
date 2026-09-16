@@ -331,55 +331,62 @@ def make_fault_timing() -> None:
 
 def merge_summaries(*summaries: dict[str, Any]) -> dict[str, Any]:
     """Combine the per-seed ``groups`` rows of several summary files so
-    violation_matrix()/aggregate_groups() can treat them as one run. Used to
-    line up the C1-C4 representative matrix's S0-S3 runs (which contain C2)
-    with the separate C5-C8 extension runs (S0-S3 for the same scenarios)."""
+    violation_matrix()/aggregate_groups() can treat them as one run. The
+    controlled matrix reuses C3 from the original GCP suite and adds only the
+    three missing concern combinations from the follow-up remote suite."""
     merged_groups: list[dict[str, Any]] = []
     for summary in summaries:
         merged_groups.extend(summary["groups"])
     return {"groups": merged_groups}
 
 
-EXTENDED_MATRIX_CONFIGS = ["C2", "C5", "C6", "C7", "C8"]
+CONCERN_MATRIX_CONFIGS = ["C3", "C5", "C6", "C8"]
 
 
 def make_extended_concern_matrix() -> None:
-    """Heatmap for the controlled 2x2 read/write-concern matrix (C2, C5, C6,
-    C7) plus the causal-session ablation config (C8), across S0-S4. Kept as
-    a separate figure from the C1-C4 representative matrix so neither gets
-    crowded (5 configs x 4 models here vs. 4x4 there)."""
+    """Heatmap for the controlled non-causal 2x2 concern matrix.
+
+    C3 supplies w:1/local from the original remote experiment. C5/C6/C8 add
+    the other three corners with the same directed alternating-Secondary
+    routing. Keeping this separate from the representative C1-C4 figure makes
+    the comparison readable without pretending that C2 and C8 are a strict
+    session ablation (their routing mechanisms differ).
+    """
     scenarios = [
         (
             "S0 Normal",
             merge_summaries(
                 load_one("baseline-s0-formal-*.summary.json"),
-                load_one("s0-normal-ext-formal-*.summary.json"),
+                load_one("s0-normal-noncausal-remote-v2-????????T??????Z-*.summary.json"),
             ),
         ),
         (
             "S1 Secondary stopped",
             merge_summaries(
                 load_one("s1-secondary-failure-formal-*.summary.json"),
-                load_one("s1-secondary-failure-ext-formal-*.summary.json"),
+                load_one("s1-secondary-failure-noncausal-remote-v2-????????T??????Z-*.summary.json"),
             ),
         ),
         (
             "S2 Primary stopped",
             merge_summaries(
                 load_one("s2-primary-failure-formal-*.summary.json"),
-                load_one("s2-primary-failure-ext-formal-*.summary.json"),
+                load_one("s2-primary-failure-noncausal-remote-v2-????????T??????Z-*.summary.json"),
             ),
         ),
         (
             "S3 Primary partitioned",
             merge_summaries(
                 load_one("s3-primary-partition-formal-rerun-*.summary.json"),
-                load_one("s3-primary-partition-ext-formal-*.summary.json"),
+                load_one("s3-primary-partition-noncausal-remote-v2-????????T??????Z-*.summary.json"),
             ),
         ),
         (
-            "S4 Replication paused\n(all pinned to the paused Secondary)",
-            load_one("s4-secondary-replication-lag-ext-formal-*.summary.json"),
+            "S4 Controlled replication lag\n(fixed alternation across two Secondaries)",
+            merge_summaries(
+                load_one("s4-secondary-replication-lag-formal-*.summary.json"),
+                load_one("s4-secondary-replication-lag-noncausal-remote-v2-????????T??????Z-*.summary.json"),
+            ),
         ),
     ]
     color_map = LinearSegmentedColormap.from_list(
@@ -390,12 +397,12 @@ def make_extended_concern_matrix() -> None:
     figure, axes = plt.subplots(2, 3, figsize=(10.5, 6.6), constrained_layout=True)
     images = []
     for axis, (title, summary) in zip(axes.flat, scenarios, strict=False):
-        matrix = violation_matrix(summary, configs=EXTENDED_MATRIX_CONFIGS)
+        matrix = violation_matrix(summary, configs=CONCERN_MATRIX_CONFIGS)
         image = axis.imshow(matrix, vmin=0, vmax=100, cmap=color_map, aspect="auto")
         images.append(image)
         axis.set_title(title, fontweight="bold", pad=8, fontsize=10)
         axis.set_xticks(range(len(MODEL_LABELS)), MODEL_LABELS)
-        axis.set_yticks(range(len(EXTENDED_MATRIX_CONFIGS)), EXTENDED_MATRIX_CONFIGS)
+        axis.set_yticks(range(len(CONCERN_MATRIX_CONFIGS)), CONCERN_MATRIX_CONFIGS)
         axis.set_xlabel("Client-centric model")
         axis.set_ylabel("Configuration")
         for row in range(matrix.shape[0]):
@@ -425,10 +432,10 @@ def make_extended_concern_matrix() -> None:
     axes.flat[-1].text(
         0.02,
         0.40,
-        "C2/C5/C6/C7 are causal; a stale read on the\n"
-        "paused node errors instead of violating (see\n"
-        "the session-ablation figure for error rates).\n"
-        "C8 is non-causal and shows the violation instead.",
+        "All four configurations are non-causal and use\n"
+        "the same directed alternating-Secondary route.\n"
+        "Rows therefore differ only in read/write concern;\n"
+        "C3 is reused from the original remote suite.",
         fontsize=8.5,
         color=MUTED,
         va="top",
@@ -437,58 +444,11 @@ def make_extended_concern_matrix() -> None:
     color_bar.set_label("Violation rate (%)")
     color_bar.set_ticks([0, 25, 50, 75, 100])
     figure.suptitle(
-        "Controlled concern matrix (C2, C5-C7) and session ablation (C8)",
+        "Controlled non-causal read/write concern matrix",
         fontsize=14,
         fontweight="bold",
     )
     save_figure(figure, "05_extended_concern_matrix")
-
-
-def make_session_ablation() -> None:
-    """C2 vs. C8 under S4: same write/read concern (majority/majority) and
-    read preference (secondary), differing only in causal session. Shows
-    violation rate and operation-error rate side by side per model, so the
-    session's effect -- trading a silent stale read for a visible error --
-    is visible directly rather than only inferable from two separate
-    figures."""
-    summary = load_one("s4-secondary-replication-lag-ext-formal-*.summary.json")
-    aggregate = aggregate_groups(summary)
-
-    figure, axes = plt.subplots(1, 2, figsize=(10, 4.2), constrained_layout=True, sharey=True)
-    y_positions = np.arange(len(MODEL_LABELS))
-    for axis, config, title, color in (
-        (axes[0], "C2", "C2 (causal)", BLUE),
-        (axes[1], "C8", "C8 (non-causal)", RED),
-    ):
-        violation_rates = []
-        error_rates = []
-        for model in MODELS:
-            group = aggregate[(config, model)]
-            total = group["checks"] + group["errors"]
-            violation_rates.append(100 * group["violations"] / group["checks"] if group["checks"] else 0)
-            error_rates.append(100 * group["errors"] / total if total else 0)
-        axis.barh(
-            y_positions - 0.19, violation_rates, height=0.36, color=color, label="Violation rate"
-        )
-        axis.barh(
-            y_positions + 0.19, error_rates, height=0.36, color=color, alpha=0.4, label="Operation-error rate"
-        )
-        axis.set_yticks(y_positions, MODEL_LABELS)
-        axis.invert_yaxis()
-        axis.set_xlim(0, 100)
-        axis.set_xlabel("Rate (%)")
-        axis.set_title(title, fontweight="bold")
-        axis.grid(axis="x", color=GRID, linewidth=0.7)
-        axis.set_axisbelow(True)
-        axis.spines[["top", "right"]].set_visible(False)
-        axis.legend(loc="lower right", fontsize=8, frameon=False)
-
-    figure.suptitle(
-        "Session ablation under S4: same read/write concern, causal session on vs. off",
-        fontsize=13,
-        fontweight="bold",
-    )
-    save_figure(figure, "06_session_ablation_c2_vs_c8")
 
 
 def make_s4_model_rates() -> None:
@@ -557,7 +517,6 @@ def main() -> int:
     make_fault_timing()
     make_s4_model_rates()
     make_extended_concern_matrix()
-    make_session_ablation()
     print(f"Wrote report figures to {FIGURE_DIR}")
     return 0
 
